@@ -42,18 +42,38 @@ export default function EventsPreview() {
   // --- 1. جلب البيانات بنفس طريقة صفحة الفعاليات ---
   const fetchEvents = useCallback(async () => {
     try {
+      // --- 1. جلب أحدث 10 فعاليات لم تبدأ بعد ---
+      const now = new Date().toISOString(); // التوقيت الحالي
       const { data: eventsData, error: eventsError } = await supabase
         .from('events')
         .select('*')
-        .order('start_time', { ascending: true })
-        .limit(3); // <-- الفرق الوحيد: نأخذ 3 فعاليات فقط
+        .gt('start_time', now) // << الشرط: تاريخ البدء أكبر من الآن
+        .order('start_time', { ascending: true }) // << الترتيب: الأقرب أولاً
+        .limit(10); // << جلب 10 فعاليات لإضافة تنوع
 
       if (eventsError) throw eventsError;
-      if (!eventsData) { setEvents([]); return; }
+      if (!eventsData || eventsData.length === 0) {
+        setEvents([]);
+        return;
+      }
 
-      const eventIds = eventsData.map(e => e.id);
-      if (eventIds.length === 0) { setEvents([]); return; }
+      // --- 2. خلط الفعاليات التي تم جلبها عشوائيًا (للتنويع) ---
+      // هذه الخوارزمية تضمن توزيعًا عشوائيًا جيدًا
+      for (let i = eventsData.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [eventsData[i], eventsData[j]] = [eventsData[j], eventsData[i]];
+      }
 
+      // --- 3. أخذ أول 3 فعاليات فقط من القائمة المخلوطة ---
+      const previewEvents = eventsData.slice(0, 3);
+      const eventIds = previewEvents.map(e => e.id);
+
+      if (eventIds.length === 0) {
+        setEvents([]);
+        return;
+      }
+
+      // --- 4. جلب عدد المسجلين لهذه الفعاليات الثلاث ---
       const { data: registrations, error: registrationsError } = await supabase
         .from('event_registrations')
         .select('event_id')
@@ -66,13 +86,17 @@ export default function EventsPreview() {
         countsMap.set(reg.event_id, (countsMap.get(reg.event_id) || 0) + 1);
       });
       
-      const eventsWithCounts = eventsData.map(event => ({
+      const eventsWithCounts = previewEvents.map(event => ({
         ...event,
         registered_attendees: countsMap.get(event.id) || 0,
       }));
+
+      // --- 5. تحديث الحالة النهائية ---
       setEvents(eventsWithCounts);
+
     } catch (error) {
       console.error("Error fetching preview events:", error);
+      toast.error("فشل في تحميل الفعاليات القادمة.");
     }
   }, []);
 

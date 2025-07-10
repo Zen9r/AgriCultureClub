@@ -41,7 +41,6 @@ type DatabaseEvent = {
   check_in_code: string;
 };
 
-// **تصحيح: تعديل مخطط التحقق لحقل max_attendees**
 const eventFormSchema = z.object({
   title: z.string().min(3, "العنوان إجباري."),
   description: z.string().min(10, "الوصف المختصر إجباري."),
@@ -54,8 +53,6 @@ const eventFormSchema = z.object({
   endHour: z.string({ required_error: "الساعة إجبارية." }),
   endMinute: z.string({ required_error: "الدقيقة إجبارية." }),
   category: z.enum(['ورش عمل', 'ندوات', 'معارض', 'زيارات', 'دورات تدريبية', 'اعمال تطوعية', 'حفلات', 'مبادرات']),
-  
-  // هذا هو التعديل الرئيسي. نستخدم preprocess لمعالجة القيمة قبل التحقق.
   max_attendees: z.preprocess(
     (val) => (String(val).trim() === '' ? undefined : Number(val)),
     z.number({ invalid_type_error: "الرجاء إدخال رقم صحيح."})
@@ -63,7 +60,6 @@ const eventFormSchema = z.object({
      .positive("يجب أن يكون الرقم أكبر من صفر.")
      .optional()
   ),
-  
   image_url: z.string().url("الرابط غير صحيح.").optional().or(z.literal('')),
   organizer_whatsapp_link: z.string().url("رابط الواتساب غير صحيح.").optional().or(z.literal('')),
 });
@@ -132,7 +128,6 @@ function EventForm({ mode, initialData, onSubmit, onCancel }: {
             ...data,
             start_time: combineDateTime(data.startDate, data.startHour, data.startMinute),
             end_time: combineDateTime(data.endDate, data.endHour, data.endMinute),
-            // Ensure empty optional number is sent as null
             max_attendees: data.max_attendees || null,
         };
         const { startDate, startTime, endDate, endTime, startHour, startMinute, endHour, endMinute, ...finalData } = submissionData as any;
@@ -159,7 +154,7 @@ function EventForm({ mode, initialData, onSubmit, onCancel }: {
                         <FormLabel>وقت البدء</FormLabel>
                         <div className="flex flex-col sm:flex-row gap-2">
                             <FormField name="startDate" control={form.control} render={({ field }) => (
-                                <FormItem className="flex-1"><Popover><PopoverTrigger asChild><FormControl><Button variant="outline" className="w-full justify-start text-left font-normal">{field.value ? format(field.value, "PPP") : <span>اختر تاريخ</span>}<CalendarIcon className="mr-auto h-4 w-4" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} /></PopoverContent></Popover><FormMessage /></FormItem>
+                                <FormItem className="flex-1"><Popover><PopoverTrigger asChild><FormControl><Button variant="outline" className="w-full justify-start text-right font-normal">{field.value ? format(field.value, "PPP") : <span>اختر تاريخ</span>}<CalendarIcon className="ml-auto h-4 w-4" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} /></PopoverContent></Popover><FormMessage /></FormItem>
                             )}/>
                             <div className="flex gap-2 flex-1">
                                 <FormField name="startHour" control={form.control} render={({ field }) => (
@@ -175,7 +170,7 @@ function EventForm({ mode, initialData, onSubmit, onCancel }: {
                         <FormLabel>وقت الانتهاء</FormLabel>
                         <div className="flex flex-col sm:flex-row gap-2">
                             <FormField name="endDate" control={form.control} render={({ field }) => (
-                                <FormItem className="flex-1"><Popover><PopoverTrigger asChild><FormControl><Button variant="outline" className="w-full justify-start text-left font-normal">{field.value ? format(field.value, "PPP") : <span>اختر تاريخ</span>}<CalendarIcon className="mr-auto h-4 w-4" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} /></PopoverContent></Popover><FormMessage /></FormItem>
+                                <FormItem className="flex-1"><Popover><PopoverTrigger asChild><FormControl><Button variant="outline" className="w-full justify-start text-right font-normal">{field.value ? format(field.value, "PPP") : <span>اختر تاريخ</span>}<CalendarIcon className="ml-auto h-4 w-4" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} /></PopoverContent></Popover><FormMessage /></FormItem>
                             )}/>
                             <div className="flex gap-2 flex-1">
                                 <FormField name="endHour" control={form.control} render={({ field }) => (
@@ -201,7 +196,6 @@ function EventForm({ mode, initialData, onSubmit, onCancel }: {
                     <FormField name="max_attendees" control={form.control} render={({ field }) => (
                          <FormItem>
                             <FormLabel>الحد الأقصى للحضور (اختياري)</FormLabel>
-                            {/* **تصحيح**: تبسيط الحقل. Zod سيتولى التحقق والمعالجة. */}
                             <FormControl>
                                 <Input type="number" placeholder="50" {...field} value={field.value ?? ''} />
                             </FormControl>
@@ -214,13 +208,13 @@ function EventForm({ mode, initialData, onSubmit, onCancel }: {
                 </div>
                 <div>
                     <FormLabel>صورة الفعالية (اختياري)</FormLabel>
-                    <Tabs defaultValue="link"><TabsList className="grid w-full grid-cols-2"><TabsTrigger value="link"><LinkIcon className="h-4 w-4 ml-2"/>رابط</TabsTrigger><TabsTrigger value="upload"><Upload className="h-4 w-4 ml-2"/>رفع</TabsTrigger></TabsList>
+                    <Tabs defaultValue="link"><TabsList className="grid w-full grid-cols-2"><TabsTrigger value="link"><LinkIcon className="h-4 w-4 mr-2"/>رابط</TabsTrigger><TabsTrigger value="upload"><Upload className="h-4 w-4 mr-2"/>رفع</TabsTrigger></TabsList>
                         <TabsContent value="link" className="pt-2"><FormField name="image_url" control={form.control} render={({ field }) => (<FormItem><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/></TabsContent>
                         <TabsContent value="upload" className="pt-2"><div className="flex items-center gap-2"><Input type="file" accept="image/*" onChange={(e) => e.target.files && handleImageUpload(e.target.files[0])} disabled={isUploading}/>{isUploading && <Loader2 className="h-5 w-5 animate-spin"/>}</div></TabsContent>
                     </Tabs>
                 </div>
                 <div className="flex gap-2 pt-4">
-                    <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>{form.formState.isSubmitting ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : mode === 'create' ? <PlusCircle className="h-4 w-4 ml-2" /> : <Edit className="h-4 w-4 ml-2" />}{mode === 'create' ? 'إنشاء الفعالية' : 'تحديث الفعالية'}</Button>
+                    <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>{form.formState.isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : mode === 'create' ? <PlusCircle className="h-4 w-4 mr-2" /> : <Edit className="h-4 w-4 mr-2" />}{mode === 'create' ? 'إنشاء الفعالية' : 'تحديث الفعالية'}</Button>
                     {mode === 'edit' && <Button type="button" variant="outline" onClick={onCancel}>إلغاء</Button>}
                 </div>
             </form>
@@ -282,7 +276,7 @@ export default function EventManagementTab() {
   };
 
   return (
-    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" dir="rtl">
       <TabsList className="grid w-full grid-cols-2">
         <TabsTrigger value="manage">إدارة الفعاليات</TabsTrigger>
         <TabsTrigger value="form">{mode === 'create' ? 'إنشاء فعالية جديدة' : 'تعديل الفعالية'}</TabsTrigger>
@@ -307,7 +301,7 @@ export default function EventManagementTab() {
                                {copiedCode === event.check_in_code ? <Check className="h-4 w-4 text-green-500"/> : <Copy className="h-4 w-4"/>}
                             </Button>
                          </div>
-                         <Button variant="outline" size="sm" onClick={() => handleEditClick(event)}><Edit className="h-4 w-4 ml-2"/>تعديل</Button>
+                         <Button variant="outline" size="sm" onClick={() => handleEditClick(event)}><Edit className="h-4 w-4 mr-2"/>تعديل</Button>
                        </div>
                      </AccordionContent>
                    </AccordionItem>
@@ -318,14 +312,21 @@ export default function EventManagementTab() {
         </Card>
       </TabsContent>
       <TabsContent value="form" className="mt-6">
-        <EventForm 
-            // **تصحيح**: استخدام key يضمن إعادة تهيئة النموذج عند التبديل بين الإنشاء والتعديل
-            key={selectedEvent ? `edit-${selectedEvent.id}` : 'create'}
-            mode={mode}
-            initialData={selectedEvent || undefined}
-            onSubmit={mode === 'create' ? handleCreate : handleUpdate}
-            onCancel={handleCancelEdit}
-        />
+        <Card>
+            <CardHeader>
+                <CardTitle>{mode === 'create' ? 'إنشاء فعالية جديدة' : 'تعديل الفعالية'}</CardTitle>
+                <CardDescription>املأ جميع الحقول المطلوبة لإنشاء أو تعديل فعالية.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <EventForm 
+                    key={selectedEvent ? `edit-${selectedEvent.id}` : 'create'}
+                    mode={mode}
+                    initialData={selectedEvent || undefined}
+                    onSubmit={mode === 'create' ? handleCreate : handleUpdate}
+                    onCancel={handleCancelEdit}
+                />
+            </CardContent>
+        </Card>
       </TabsContent>
     </Tabs>
   );

@@ -11,6 +11,14 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Calendar, Clock, MapPin, Users, Tag, ArrowRight, CheckCircle, XCircle, Clock as ClockIcon } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import Link from 'next/link';
 
 interface Event {
@@ -61,6 +69,8 @@ export default function EventDetailPage() {
   const [registrationStatus, setRegistrationStatus] = useState<
     'not_registered' | 'registered' | 'attended'
   >('not_registered');
+  
+  const [isOrganizerModalOpen, setOrganizerModalOpen] = useState(false); 
   
   const router = useRouter();
   const params = useParams();
@@ -114,36 +124,43 @@ export default function EventDetailPage() {
     fetchEvent();
   }, [id]);
 
-  const handleAttendEvent = async (eventId: number) => {
-    if (!user || !event) return;
+  const handleAttendEvent = async (eventId: number, role: 'attendee' | 'organizer') => {
+  if (!user || !event) return;
 
-    const toastId = toast.loading('جارٍ تسجيلك...');
-    try {
-      const { data: existingRegistration } = await supabase.from('event_registrations').select().eq('user_id', user.id).eq('event_id', eventId).maybeSingle();
-      if (existingRegistration) {
-        return toast.error('لقد سجلت في هذه الفعالية مسبقاً', { id: toastId });
-      }
-
-      if (event.max_attendees && (event.registered_attendees ?? 0) >= event.max_attendees) {
-        return toast.error('لا توجد مقاعد متاحة', { id: toastId });
-      }
-
-      const { error } = await supabase.from('event_registrations').insert({
-        user_id: user.id,
-        event_id: eventId,
-        status: 'registered'
-      });
-
-      if (error) throw error;
-      
-      setEvent(prev => prev ? { ...prev, registered_attendees: (prev.registered_attendees || 0) + 1 } : null);
-      setRegistrationStatus('registered');
-      toast.success('تم التسجيل في الفعالية بنجاح!', { id: toastId });
-    } catch (error: any) {
-      toast.error(error.message || 'حدث خطأ أثناء التسجيل', { id: toastId });
+  const toastId = toast.loading('جارٍ تسجيلك...');
+  try {
+    const { data: existingRegistration } = await supabase.from('event_registrations').select().eq('user_id', user.id).eq('event_id', eventId).maybeSingle();
+    if (existingRegistration) {
+      return toast.error('لقد سجلت في هذه الفعالية مسبقاً', { id: toastId });
     }
-  };
 
+    if (event.max_attendees && (event.registered_attendees ?? 0) >= event.max_attendees) {
+      return toast.error('لا توجد مقاعد متاحة', { id: toastId });
+    }
+
+    // التعديل الرئيسي: نمرر الدور الذي تم اختياره عند إضافة سجل جديد
+    const { error } = await supabase.from('event_registrations').insert({
+      user_id: user.id,
+      event_id: eventId,
+      status: 'registered',
+      role: role // << تم إضافة الدور هنا
+    });
+
+    if (error) throw error;
+    
+    setEvent(prev => prev ? { ...prev, registered_attendees: (prev.registered_attendees || 0) + 1 } : null);
+    setRegistrationStatus('registered');
+    
+    if (role === 'organizer') {
+      toast.dismiss(toastId); // إخفاء رسالة "جارٍ التسجيل"
+      setOrganizerModalOpen(true); // إظهار الرسالة المنبثقة للمنظم
+    } else {
+      toast.success('تم التسجيل في الفعالية بنجاح!', { id: toastId }); // إظهار رسالة النجاح العادية للحضور
+    }
+  } catch (error: any) {
+    toast.error(error.message || 'حدث خطأ أثناء التسجيل', { id: toastId });
+  }
+};
   const handleCheckIn = async (verificationCode: string) => {
     try {
       if (verificationCode.toLowerCase() !== event!.check_in_code?.toLowerCase()) {
@@ -165,70 +182,83 @@ export default function EventDetailPage() {
     }
   };
   
-  const renderActionSection = () => {
-    if (!user) {
+ const renderActionSection = () => {
+  if (!user) {
+    return (
+      <Button 
+        className="w-full h-12 text-lg" 
+        onClick={() => router.push('/login')}
+      >
+        سجل دخولك للتسجيل
+      </Button>
+    );
+  }
+
+  const now = new Date();
+  const startTime = new Date(event!.start_time);
+  const endTime = new Date(event!.end_time);
+  const checkInDeadline = new Date(endTime.getTime() + 60 * 60 * 1000);
+
+  const isCheckInWindow = now >= startTime && now <= checkInDeadline;
+  const hasCheckInEnded = now > checkInDeadline;
+  const isEventEnded = now > endTime;
+
+  switch (registrationStatus) {
+    case 'attended':
       return (
-        <Button 
-          className="w-full h-12 text-lg" 
-          onClick={() => router.push('/login')}
-        >
-          سجل دخولك للتسجيل
-        </Button>
+        <div className="flex items-center justify-center p-3 rounded-lg bg-green-100 text-green-800 font-semibold">
+          <CheckCircle className="ml-2" /> تم تأكيد حضورك
+        </div>
       );
-    }
-
-    const now = new Date();
-    const startTime = new Date(event!.start_time);
-    const endTime = new Date(event!.end_time);
-    const checkInDeadline = new Date(endTime.getTime() + 60 * 60 * 1000);
-
-    const isCheckInWindow = now >= startTime && now <= checkInDeadline;
-    const hasCheckInEnded = now > checkInDeadline;
-    const isEventEnded = now > endTime;
-
-    switch (registrationStatus) {
-      case 'attended':
+    
+    case 'registered':
+      if (isCheckInWindow) {
+        return <CheckInForm onConfirm={handleCheckIn} />;
+      } else if (hasCheckInEnded) {
         return (
-          <div className="flex items-center justify-center p-3 rounded-lg bg-green-100 text-green-800 font-semibold">
-            <CheckCircle className="ml-2" /> تم تأكيد حضورك
+          <div className="text-center p-3 rounded-lg bg-red-100 text-red-700">
+            <XCircle className="inline mr-2" />
+            انتهى وقت التحقق من الحضور
           </div>
         );
-      
-      case 'registered':
-        if (isCheckInWindow) {
-          return <CheckInForm onConfirm={handleCheckIn} />;
-        } else if (hasCheckInEnded) {
-          return (
-            <div className="text-center p-3 rounded-lg bg-red-100 text-red-700">
-              <XCircle className="inline mr-2" />
-              انتهى وقت التحقق من الحضور
-            </div>
-          );
-        } else {
-          return (
-            <div className="text-center p-3 rounded-lg bg-blue-100 text-blue-700">
-              <ClockIcon className="inline mr-2" />
-              التحقق من الحضور لم يبدأ بعد
-            </div>
-          );
-        }
-
-      default:
-        if (isEventEnded) return <Button className="w-full h-12 text-lg" disabled>انتهت الفعالية</Button>;
-        
-        const isFull = event!.max_attendees !== null && (event!.registered_attendees ?? 0) >= event!.max_attendees;
-        
+      } else {
         return (
+          <div className="text-center p-3 rounded-lg bg-blue-100 text-blue-700">
+            <ClockIcon className="inline mr-2" />
+            التحقق من الحضور لم يبدأ بعد
+          </div>
+        );
+      }
+
+    default:
+      if (isEventEnded) return <Button className="w-full h-12 text-lg" disabled>انتهت الفعالية</Button>;
+      
+      const isFull = event!.max_attendees !== null && (event!.registered_attendees ?? 0) >= event!.max_attendees;
+      
+      // التعديل الرئيسي: عرض زرين للتسجيل
+      return (
+        <div className="flex flex-col sm:flex-row gap-2">
+          {/* زر التسجيل كحضور (باللون الأخضر) */}
           <Button 
-            className="w-full h-12 text-lg bg-green-600 hover:bg-green-700" 
-            onClick={() => handleAttendEvent(event!.id)} 
+            className="flex-1 h-12 text-lg bg-green-600 hover:bg-green-700" 
+            onClick={() => handleAttendEvent(event!.id, 'attendee')} 
             disabled={isFull}
           >
-            {isFull ? 'المقاعد ممتلئة' : 'تسجيل في الفعالية'}
+            {isFull ? 'المقاعد ممتلئة' : 'تسجيل كحضور'}
           </Button>
-        );
-    }
-  };
+
+          {/* زر التسجيل كمنظم (باللون الأساسي - الأزرق عادةً) */}
+          <Button 
+            className="flex-1 h-12 text-lg"
+            variant="default" // << يمكنك تغيير هذا لـ "outline" إذا أردت
+            onClick={() => handleAttendEvent(event!.id, 'organizer')} 
+          >
+            تسجيل كمنظم
+          </Button>
+        </div>
+      );
+  }
+};
 
   if (loading) {
     return (
@@ -384,6 +414,29 @@ export default function EventDetailPage() {
           </Link>
         </div>
       </div>
+      <Dialog open={isOrganizerModalOpen} onOpenChange={setOrganizerModalOpen}>
+  <DialogContent className="sm:max-w-md text-center p-6 bg-white">
+    <DialogHeader>
+      <DialogTitle className="text-2xl text-green-600">تهانينا! لقد انضممت كمنظم</DialogTitle>
+      <DialogDescription className="pt-2 text-gray-600">
+        نشكر لك تطوعك للمساعدة. خطوتك التالية هي الانضمام لمجموعة الواتساب الخاصة بالمنظمين لمتابعة آخر التحديثات.
+      </DialogDescription>
+    </DialogHeader>
+    <DialogFooter className="sm:justify-center pt-4">
+      <a 
+        href={event?.organizer_whatsapp_link || '#'} 
+        target="_blank" 
+        rel="noopener noreferrer" 
+        className="w-full"
+        onClick={() => setOrganizerModalOpen(false)}
+      >
+        <Button type="button" className="w-full bg-green-600 hover:bg-green-700 h-12 text-lg">
+          الانضمام لمجموعة الواتساب
+        </Button>
+      </a>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
     </div>
   );
 }
