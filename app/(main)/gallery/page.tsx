@@ -2,14 +2,11 @@
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
-import { motion, AnimatePresence, Variants } from 'framer-motion'; // Import Variants
+import { motion, AnimatePresence, Variants } from 'framer-motion';
 import { Skeleton } from '@/components/ui/skeleton';
 import { X, AlertCircle } from 'lucide-react';
-
-// --- Corrected Import Path ---
 import { useGalleryImages, GalleryImage } from '@/hooks/useGalleryImages';
 
-// --- Implemented Helper Components ---
 function ImageSkeleton() {
     return <Skeleton className="h-64 w-full rounded-lg" />;
 }
@@ -30,7 +27,6 @@ const allStaticCategories = [
   "مؤتمرات", "رحلات", "مسابقات"
 ];
 
-// --- Corrected Variants Type ---
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
@@ -51,6 +47,14 @@ const itemVariants: Variants = {
   },
 };
 
+// أنيميشن النافذة المنبثقة الجديد
+const modalVariants: Variants = {
+    initial: { opacity: 0, scale: 0.95 },
+    animate: { opacity: 1, scale: 1, transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] } },
+    exit: { opacity: 0, scale: 0.95, transition: { duration: 0.2, ease: [0.7, 0, 0.84, 0] } },
+};
+
+
 export default function GalleryPage() {
   const { data: images = [], isLoading, isError, error } = useGalleryImages();
   
@@ -65,12 +69,22 @@ export default function GalleryPage() {
   const closeModal = () => setSelectedImage(null);
 
   useEffect(() => {
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closeModal();
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
     document.body.style.overflow = selectedImage ? 'hidden' : 'auto';
-    return () => { document.body.style.overflow = 'auto'; };
+
+    return () => {
+      window.removeEventListener('keydown', handleEsc);
+      document.body.style.overflow = 'auto';
+    };
   }, [selectedImage]);
 
   return (
-    <main className="relative overflow-hidden bg-gray-50 dark:bg-gray-900">
+    <main className="bg-gray-50 dark:bg-gray-900">
       <section className="bg-gradient-to-r from-[#4CAF50] to-[#42A5F5] text-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="text-4xl md:text-5xl font-bold mb-4">
@@ -121,14 +135,15 @@ export default function GalleryPage() {
                     filteredImages.map((image) => (
                         <motion.div
                             key={image.id}
-                            layoutId={`image-${image.id}`}
                             variants={itemVariants}
-                            className="relative group cursor-pointer overflow-hidden rounded-lg shadow-md bg-white dark:bg-gray-800"
+                            className="group cursor-pointer overflow-hidden rounded-lg shadow-md bg-white dark:bg-gray-800"
                             onClick={() => setSelectedImage(image)}
+                            whileHover={{ scale: 1.03, y: -5 }}
+                            transition={{ type: "spring", stiffness: 300, damping: 15 }}
                         >
-                            <img src={image.image_url} alt={image.alt_text} className="w-full h-64 object-cover transition-transform duration-300 group-hover:scale-105" />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
-                                <h3 className="text-white font-semibold text-sm line-clamp-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">{image.alt_text}</h3>
+                            <img src={image.image_url} alt={image.alt_text} className="w-full h-64 object-cover" />
+                            <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                                <h3 className="text-white font-semibold text-sm line-clamp-2">{image.alt_text}</h3>
                             </div>
                         </motion.div>
                     ))
@@ -136,52 +151,50 @@ export default function GalleryPage() {
             </motion.div>
         </div>
       </section>
-      <AnimatePresence>
-  {selectedImage && (
-    <motion.div
-      className="fixed inset-0 bg-black/80 flex items-center justify-center z-[999] p-4" // <--- تم التعديل هنا
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
-      onClick={closeModal}
-    >
-      {/* هذا هو العنصر الوحيد الذي يتحرك من الصغير للكبير */}
-      {/* المحتوى الآن بداخل العنصر المتحرك نفسه */}
-      <motion.div
-        layoutId={`image-${selectedImage.id}`}
-        className="relative flex flex-col items-center justify-center w-auto max-w-4xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <img 
-          src={selectedImage.image_url} 
-          alt={selectedImage.alt_text} 
-          className="object-contain rounded-lg max-h-[80vh] w-auto shadow-2xl"
-        />
-        {/* النص يظهر مع الصورة بسلاسة */}
-        <div className="w-full text-white mt-2 p-4 bg-black/20 backdrop-blur-sm rounded-b-lg">
-          <h3 className="text-xl font-bold">{selectedImage.alt_text}</h3>
-          <div className="flex justify-between items-center mt-2">
-            <span className="bg-[#4CAF50] text-white px-3 py-1 rounded-full text-sm">{selectedImage.category}</span>
-            <span className="text-gray-300 text-sm">{new Date(selectedImage.created_at).toLocaleDateString("ar-SA")}</span>
-          </div>
-        </div>
-      </motion.div>
-      
-      {/* زر الإغلاق يبقى منفصلاً في الأعلى */}
-      <motion.button 
-        onClick={closeModal} 
-        className="absolute top-4 right-4 text-white bg-black/50 rounded-full p-2"
-        initial={{ opacity: 0, scale: 0.5 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.1 }}
-      >
-        <X className="w-6 h-6" />
-      </motion.button>
 
-    </motion.div>
-  )}
-</AnimatePresence>
+      <AnimatePresence>
+        {selectedImage && (
+          <motion.div
+            className="fixed inset-0 bg-black/80 flex items-center justify-center z-[999] p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={closeModal}
+          >
+            <motion.div
+                className="relative w-full max-w-4xl max-h-[90vh] flex flex-col items-center"
+                variants={modalVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                onClick={(e) => e.stopPropagation()}
+            >
+              <img 
+                src={selectedImage.image_url} 
+                alt={selectedImage.alt_text} 
+                className="object-contain rounded-lg w-auto h-auto max-w-full max-h-[calc(90vh-80px)] shadow-2xl"
+              />
+              <div className="w-full max-w-full text-white mt-4 text-center">
+                <h3 className="text-lg font-bold">{selectedImage.alt_text}</h3>
+                <div className="flex justify-center items-center gap-4 mt-2 text-sm">
+                  <span className="bg-[#4CAF50] text-white px-3 py-1 rounded-full">{selectedImage.category}</span>
+                  <span className="text-gray-300">{new Date(selectedImage.created_at).toLocaleDateString("ar-SA")}</span>
+                </div>
+              </div>
+            </motion.div>
+            
+            <motion.button 
+              onClick={closeModal} 
+              className="absolute top-4 right-4 text-white bg-black/50 rounded-full p-2"
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.1 }}
+            >
+              <X className="w-6 h-6" />
+            </motion.button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </main>
   );
 };
