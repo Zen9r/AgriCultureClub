@@ -9,7 +9,14 @@ export const useFileUpload = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
-  const uploadFile = async (file: File, bucket: string): Promise<string | null> => {
+  /**
+   * دالة لرفع ملف إلى Supabase Storage مع ضغط الصور تلقائياً.
+   * @param file الملف المُراد رفعه.
+   * @param bucket اسم الـ Bucket في Supabase.
+   * @param customPath (اختياري) مسار مخصص للملف، مثل "user-id/avatar.png".
+   * @returns رابط الملف العام أو null في حالة الفشل.
+   */
+  const uploadFile = async (file: File, bucket: string, customPath?: string): Promise<string | null> => {
     setIsUploading(true);
     setUploadProgress(0);
 
@@ -18,24 +25,18 @@ export const useFileUpload = () => {
       // الخطوة 1: ضغط الصورة إذا كانت من نوع صورة
       if (file.type.startsWith('image/')) {
         const options = {
-          maxSizeMB: 1,          // الحجم الأقصى بعد الضغط (1 ميجابايت)
-          maxWidthOrHeight: 1920, // أقصى عرض أو ارتفاع
+          maxSizeMB: 1,
+          maxWidthOrHeight: 1920,
           useWebWorker: true,
-          onProgress: (p: number) => setUploadProgress(p * 0.5), // الضغط يمثل 50% من التقدم
+          onProgress: (p: number) => setUploadProgress(p * 0.5),
         };
-        toast.promise(
-           imageCompression(file, options),
-           {
-             loading: 'جارٍ ضغط الصورة...',
-             success: 'تم ضغط الصورة بنجاح!',
-             error: 'فشل ضغط الصورة.',
-           }
-        );
         fileToUpload = await imageCompression(file, options);
       }
       
-      const fileName = `${Date.now()}_${fileToUpload.name}`;
-      const filePath = `${fileName}`;
+      // -- التعديل هنا --
+      // استخدم المسار المخصص إذا تم توفيره، وإلا قم بإنشاء اسم ملف عشوائي.
+      // هذا يجعل الهوك مرناً وقابلاً لإعادة الاستخدام في أماكن أخرى.
+      const filePath = customPath || `${Date.now()}_${fileToUpload.name}`;
 
       // الخطوة 2: رفع الملف إلى Supabase Storage
       const { error: uploadError } = await supabase.storage
@@ -43,9 +44,6 @@ export const useFileUpload = () => {
         .upload(filePath, fileToUpload, {
           cacheControl: '3600',
           upsert: false,
-          // تتبع تقدم الرفع
-          // للأسف، مكتبة supabase-js الحالية لا تدعم تتبع التقدم مباشرة
-          // سنترك هذا للتحسين المستقبلي
         });
 
       if (uploadError) {
@@ -69,7 +67,7 @@ export const useFileUpload = () => {
       return null;
     } finally {
       setIsUploading(false);
-      setUploadProgress(100); // إكمال شريط التقدم
+      setUploadProgress(100);
     }
   };
 

@@ -23,7 +23,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { PlusCircle, Edit, Loader2, CalendarIcon, Upload, Link as LinkIcon, AlertTriangle, Copy, Check } from 'lucide-react';
+import { PlusCircle, Edit, Loader2, CalendarIcon, Upload, Link as LinkIcon, AlertTriangle, Copy, Check, Trash } from 'lucide-react';
 
 // --- Types & Schema ---
 type DatabaseEvent = {
@@ -255,6 +255,20 @@ export default function EventManagementTab() {
     if (error) { toast.error(error.message); }
     else { toast.success("تم تحديث الفعالية."); setMode('create'); setSelectedEvent(null); await fetchEvents(); setActiveTab('manage'); }
   };
+
+  const handleDeleteEvent = async (eventId: number) => {
+  const confirm = window.confirm("هل أنت متأكد من حذف الفعالية؟ لا يمكن التراجع.");
+  if (!confirm) return;
+
+  const { error } = await supabase.from('events').delete().eq('id', eventId);
+  if (error) {
+    toast.error("فشل الحذف: " + error.message);
+  } else {
+    toast.success("تم حذف الفعالية.");
+    await fetchEvents(); // تحديث القائمة بعد الحذف
+  }
+};
+
   
   const handleEditClick = (event: DatabaseEvent) => {
     setSelectedEvent(event);
@@ -303,6 +317,11 @@ export default function EventManagementTab() {
                          </div>
                          <Button variant="outline" size="sm" onClick={() => handleEditClick(event)}><Edit className="h-4 w-4 mr-2"/>تعديل</Button>
                        </div>
+                       <Button variant="destructive" size="sm" onClick={() => handleDeleteEvent(event.id)}>
+                         <Trash className="h-4 w-4 mr-2" />
+                           حذف
+                          </Button>
+
                      </AccordionContent>
                    </AccordionItem>
                  ))}

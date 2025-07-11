@@ -13,6 +13,7 @@ export interface Profile {
   phone_number: string;
   role: 'member' | 'committee_member' | 'committee_lead' | 'committee_deputy' | 'club_deputy' | 'club_lead' | 'club_supervisor' | 'super_admin';
   committee: 'hr' | 'pr' | 'media' | 'design' | 'logistics' | null;
+  avatar_url: string | null;
 }
 
 const fetchProfile = async (userId: string): Promise<Profile | null> => {

@@ -33,6 +33,8 @@ import { useUserProfileData } from "@/hooks/useUserProfileData";
 import type { Profile } from "@/hooks/useProfile";
 import type { Registration } from "@/hooks/useUserRegistrations";
 
+// --- استيراد مكون تعديل الصورة الشخصية ---
+import EditAvatarDialog from "@/components/EditAvatarDialog";
 
 // --- الدوال المساعدة (Helper Functions) ---
 const getInitials = (name: string): string => {
@@ -49,7 +51,7 @@ const getRoleLabel = (role: Profile['role'], committee: Profile['committee']): s
   if (noCommitteeRoles.includes(role)) {
     const roleMap: Record<string, string> = {
       'club_deputy': 'نائب قائد النادي', 'club_lead': 'قائد النادي',
-      'club_supervisor': 'مشرف النادي', 'super_admin': 'سوبر أدمن'
+      'club_supervisor': 'مشرف النادي', 'super_admin': 'Tempest'
     };
     return roleMap[role] || 'عضو';
   }
@@ -83,6 +85,7 @@ export default function ProfilePage() {
 
   const [activeTab, setActiveTab] = useState('upcoming');
   const [isProfileVisible, setProfileVisible] = useState(true);
+  const [isAvatarDialogOpen, setAvatarDialogOpen] = useState(false); // <-- حالة نافذة التعديل
   const isMobile = useMediaQuery({ maxWidth: 1024 });
 
   useEffect(() => { setProfileVisible(!isMobile); }, [isMobile]);
@@ -108,7 +111,6 @@ export default function ProfilePage() {
     
     return { upcomingRegistrations: upcoming, pastRegistrations: past };
   }, [registrations]);
-
 
   const allTabs = useMemo(() => [
     { id: 'upcoming', label: 'الفعاليات القادمة', component: <UpcomingEventsTab registrations={upcomingRegistrations} isLoading={isLoading} />, permissionGroup: 'general' },
@@ -186,10 +188,24 @@ export default function ProfilePage() {
           <div className="mb-6">
             <Card className="shadow-sm">
               <CardHeader className="flex flex-row items-center space-x-4 pb-4 rtl:space-x-reverse">
-                <Avatar className="h-16 w-16">
-                  <AvatarImage src={`https://api.dicebear.com/8.x/initials/svg?seed=${profile.full_name}`} alt={profile.full_name} />
-                  <AvatarFallback>{getInitials(profile.full_name)}</AvatarFallback>
-                </Avatar>
+                {/* --- بداية تعديل صورة الموبايل --- */}
+                <div className="relative group">
+                  <Avatar className="h-16 w-16">
+                    <AvatarImage
+                     className="object-cover"
+                      src={profile.avatar_url || `https://api.dicebear.com/8.x/initials/svg?seed=${profile.full_name}`}
+                      alt={profile.full_name || ''}
+                    />
+                    <AvatarFallback>{getInitials(profile.full_name || '')}</AvatarFallback>
+                  </Avatar>
+                  <button
+                    onClick={() => setAvatarDialogOpen(true)}
+                    className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                  >
+                    <Edit className="h-6 w-6 text-white" />
+                  </button>
+                </div>
+                {/* --- نهاية تعديل صورة الموبايل --- */}
                 <div className="flex-1">
                   <CardTitle className="text-2xl">{profile.full_name}</CardTitle>
                   <CardDescription><Badge variant="outline" className="mt-1">{getRoleLabel(profile.role, profile.committee)}</Badge></CardDescription>
@@ -206,15 +222,11 @@ export default function ProfilePage() {
                 </div>
               </CardContent>
               <CardFooter className="flex flex-col space-y-2 pt-6">
-                {/* --- بداية التعديلات (للموبايل) --- */}
-                <Button variant="secondary" className="w-full" onClick={handleRefresh}><RefreshCw className="h-4 w-4 ml-2" />تحديث البيانات</Button>
-                {/* الشرط: إظهار الزر فقط إذا كان الدور هو 'member' */}
                 {profile.role === 'member' && (
                   <Link href="/committee-application" className="w-full">
                     <Button variant="secondary" className="w-full"><Users className="h-4 w-4 ml-2" />الانضمام لإحدى اللجان</Button>
                   </Link>
                 )}
-                {/* --- نهاية التعديلات --- */}
               </CardFooter>
             </Card>
           </div>
@@ -228,10 +240,24 @@ export default function ProfilePage() {
                         transition={{ type: "spring", stiffness: 300, damping: 25 }} className="hidden lg:block flex-shrink-0 w-1/3">
                         <Card className="shadow-sm w-full sticky top-24">
                             <CardHeader className="flex flex-row items-center space-x-4 pb-4 rtl:space-x-reverse">
-                                <Avatar className="h-16 w-16">
-                                    <AvatarImage src={`https://api.dicebear.com/8.x/initials/svg?seed=${profile.full_name}`} alt={profile.full_name} />
-                                    <AvatarFallback>{getInitials(profile.full_name)}</AvatarFallback>
-                                </Avatar>
+                                {/* --- بداية تعديل صورة سطح المكتب --- */}
+                                <div className="relative group">
+                                  <Avatar className="h-16 w-16">
+                                    <AvatarImage
+                                     className="object-cover"
+                                      src={profile.avatar_url || `https://api.dicebear.com/8.x/initials/svg?seed=${profile.full_name}`}
+                                      alt={profile.full_name || ''}
+                                    />
+                                    <AvatarFallback>{getInitials(profile.full_name || '')}</AvatarFallback>
+                                  </Avatar>
+                                  <button
+                                    onClick={() => setAvatarDialogOpen(true)}
+                                    className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                                  >
+                                    <Edit className="h-6 w-6 text-white" />
+                                  </button>
+                                </div>
+                                {/* --- نهاية تعديل صورة سطح المكتب --- */}
                                 <div className="flex-1">
                                     <CardTitle className="text-2xl">{profile.full_name}</CardTitle>
                                     <CardDescription><Badge variant="outline" className="mt-1">{getRoleLabel(profile.role, profile.committee)}</Badge></CardDescription>
@@ -248,14 +274,11 @@ export default function ProfilePage() {
                                 </div>
                             </CardContent>
                             <CardFooter className="flex flex-col space-y-2 pt-6">
-                                {/* --- بداية التعديلات (للسطح المكتب) --- */}
-                                {/* الشرط: إظهار الزر فقط إذا كان الدور هو 'member' */}
                                 {profile.role === 'member' && (
                                   <Link href="/committee-application" className="w-full">
                                     <Button variant="secondary" className="w-full"><Users className="h-4 w-4 ml-2" />عضوية اختيار لجنة</Button>
                                   </Link>
                                 )}
-                                {/* --- نهاية التعديلات --- */}
                             </CardFooter>
                         </Card>
                     </motion.div>
@@ -300,6 +323,13 @@ export default function ProfilePage() {
           </motion.div>
         </div>
       </main>
+
+      {/* --- إضافة نافذة تعديل الصورة --- */}
+      <EditAvatarDialog 
+        profile={profile}
+        isOpen={isAvatarDialogOpen}
+        setIsOpen={setAvatarDialogOpen}
+      />
     </div>
   );
 }
