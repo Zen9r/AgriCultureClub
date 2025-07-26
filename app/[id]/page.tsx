@@ -19,6 +19,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from "@/components/ui/input-otp";
+
 import Link from 'next/link';
 
 interface Event {
@@ -41,20 +47,32 @@ const CheckInForm = ({ onConfirm }: { onConfirm: (code: string) => void }) => {
   const [code, setCode] = useState('');
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 text-center">
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700">كود التحقق</label>
-        <input
-          type="text"
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
-          placeholder="أدخل كود التحقق"
-        />
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          أدخل كود التحقق من الحضور
+        </label>
+        <div dir="ltr"> {/* لضمان عرض الخانات من اليسار لليمين بشكل صحيح */}
+          <InputOTP
+            maxLength={6}
+            value={code}
+            onChange={(value) => setCode(value)}
+          >
+            <InputOTPGroup className="mx-auto">
+              <InputOTPSlot index={0} />
+              <InputOTPSlot index={1} />
+              <InputOTPSlot index={2} />
+              <InputOTPSlot index={3} />
+              <InputOTPSlot index={4} />
+              <InputOTPSlot index={5} />
+            </InputOTPGroup>
+          </InputOTP>
+        </div>
       </div>
       <Button 
         className="w-full h-12 text-lg bg-green-600 hover:bg-green-700"
         onClick={() => onConfirm(code)}
+        disabled={code.length < 6} // تعطيل الزر حتى يتم إدخال الكود كاملاً
       >
         تأكيد الحضور
       </Button>
