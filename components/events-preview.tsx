@@ -167,7 +167,7 @@ export default function EventsPreview() {
                   </CardContent>
                   <CardFooter className="flex gap-2">
                     <Button className="flex-1 bg-[#4CAF50] hover:bg-[#45a049] text-white" onClick={() => handleAttendEvent(event.id)}>تسجيل</Button>
-                    <Link href={`/events/${event.id}`} className="flex-1"><Button variant="outline" className="w-full border-[#4CAF50] text-[#4CAF50] hover:bg-[#4CAF50] hover:text-white">التفاصيل</Button></Link>
+                    <Link href={`/${event.id}`} className="flex-1"><Button variant="outline" className="w-full border-[#4CAF50] text-[#4CAF50] hover:bg-[#4CAF50] hover:text-white">التفاصيل</Button></Link>
                   </CardFooter>
                 </Card>
               ))}
