@@ -19,11 +19,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Download, AlertTriangle, CheckCircle, Loader2, Archive, ListChecks, FileText, Clock, User, Calendar } from 'lucide-react';
 
 // --- Types ---
-type EventWithTimes = { id: number; title: string; start_time: string; end_time: string; report_id: string | null; };
+type EventWithTimes = { 
+  id: number; 
+  title: string; 
+  start_time: string; 
+  end_time: string; 
+  event_reports: { 
+    id: string;
+    notes: string | null;
+    created_at: string;
+    uploaded_by: string;
+  }[];
+};
+
 type ParticipantProfile = { full_name: string; student_id: string; email: string; phone_number: string; };
 type Participant = { role: 'attendee' | 'organizer'; status: 'attended' | 'absent' | 'registered'; profiles: ParticipantProfile; };
 type ReportNotesForm = { notes: string; };
-type ReportDetails = { notes: string | null; created_at: string; uploaded_by: string; uploader_name?: string; };
 
 // --- Helper Functions ---
 const calculateDuration = (start: string, end: string): string => {
@@ -31,6 +42,7 @@ const calculateDuration = (start: string, end: string): string => {
     if (isNaN(diffMs) || diffMs < 0) return '0.0';
     return (diffMs / (1000 * 60 * 60)).toFixed(1);
 };
+
 const exportToCSV = (participants: Participant[], event: EventWithTimes) => {
   if (!participants || participants.length === 0) { toast.error('لا يوجد مشاركين لتصديرهم.'); return; }
   const headers = ['الاسم الكامل', 'الرقم الجامعي', 'البريد الإلكتروني', 'رقم الهاتف', 'الدور', 'الحالة'];
@@ -54,10 +66,10 @@ const exportToCSV = (participants: Participant[], event: EventWithTimes) => {
 };
 
 // --- Details View Component ---
-function EventDetailsView({ event, onReportSubmitted }: { event: EventWithTimes; onReportSubmitted: (eventId: number, newReportId: string) => void; }) {
+function EventDetailsView({ event, onReportSubmitted }: { event: EventWithTimes; onReportSubmitted: (eventId: number) => void; }) {
   const [participants, setParticipants] = useState<Participant[]>([]);
-  const [reportDetails, setReportDetails] = useState<ReportDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [uploaderName, setUploaderName] = useState<string | null>(null);
   const { register, handleSubmit, formState: { isSubmitting } } = useForm<ReportNotesForm>({
     defaultValues: { notes: '' }
   });
@@ -70,33 +82,34 @@ function EventDetailsView({ event, onReportSubmitted }: { event: EventWithTimes;
       if (error) { toast.error("فشل جلب قائمة الحضور."); console.error("RPC Error:", error); } 
       else { setParticipants(data as Participant[]); }
       
-      if (event.report_id) {
-        const { data: reportData, error: reportError } = await supabase.from('event_reports').select('notes, created_at, uploaded_by').eq('id', event.report_id).single();
-        if (!reportError && reportData) {
-            // **تصحيح**: جلب اسم الموثِّق في طلب منفصل لتجنب المشاكل
-            const { data: uploaderProfile, error: profileError } = await supabase.from('profiles').select('full_name').eq('id', reportData.uploaded_by).single();
-            if(!profileError) {
-                setReportDetails({ ...reportData, uploader_name: uploaderProfile.full_name });
-            } else {
-                setReportDetails(reportData); // Show details even if uploader name fails
-            }
+      if (event.event_reports.length > 0) {
+        const uploaderId = event.event_reports[0].uploaded_by;
+        const { data: uploaderProfile, error: profileError } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', uploaderId)
+          .single();
+        if (!profileError) {
+          setUploaderName(uploaderProfile.full_name);
         }
       }
       setIsLoading(false);
     };
     fetchDetails();
-  }, [event.id, event.report_id]);
+  }, [event.id, event.event_reports]);
 
   const onMarkAsReported: SubmitHandler<ReportNotesForm> = async (formData) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not found');
-      const { data: report, error: reportError } = await supabase.from('event_reports').insert({ event_id: event.id, notes: formData.notes, uploaded_by: user.id }).select('id').single();
+      const { data: report, error: reportError } = await supabase
+        .from('event_reports')
+        .insert({ event_id: event.id, notes: formData.notes, uploaded_by: user.id })
+        .select('id')
+        .single();
       if (reportError) throw reportError;
-      const { error: eventUpdateError } = await supabase.from('events').update({ report_id: report.id }).eq('id', event.id);
-      if (eventUpdateError) throw eventUpdateError;
       toast.success('تم توثيق التقرير بنجاح!');
-      onReportSubmitted(event.id, report.id);
+      onReportSubmitted(event.id);
     } catch (e: any) {
       toast.error(e.message || 'فشل توثيق التقرير.');
     }
@@ -113,11 +126,20 @@ function EventDetailsView({ event, onReportSubmitted }: { event: EventWithTimes;
           </>
         )}
       </div>
-      {event.report_id ? (
+      {event.event_reports.length > 0 ? (
           <div className="pt-6 border-t"><h4 className="text-lg font-semibold mb-2">معلومات التوثيق</h4>
               {isLoading ? <Loader2 className="h-5 w-5 animate-spin"/> :
-              reportDetails ? (<div className="text-sm space-y-2 text-muted-foreground"><p className="flex items-center gap-2"><User size={14}/> <strong>تم التوثيق بواسطة:</strong> {reportDetails.uploader_name || 'غير معروف'}</p><p className="flex items-center gap-2"><Calendar size={14}/> <strong>تاريخ التوثيق:</strong> {new Date(reportDetails.created_at).toLocaleString('ar-SA')}</p>{reportDetails.notes && <p><strong>الملاحظات:</strong> {reportDetails.notes}</p>}</div>)
-              : <p className="text-sm text-red-500">لم يتم العثور على تفاصيل التقرير.</p>}
+              (() => {
+                  const report = event.event_reports[0];
+                  return (
+                      <div className="text-sm space-y-2 text-muted-foreground">
+                          <p className="flex items-center gap-2"><User size={14}/> <strong>تم التوثيق بواسطة:</strong> {uploaderName || 'غير معروف'}</p>
+                          <p className="flex items-center gap-2"><Calendar size={14}/> <strong>تاريخ التوثيق:</strong> {new Date(report.created_at).toLocaleString('ar-SA')}</p>
+                          {report.notes && <p><strong>الملاحظات:</strong> {report.notes}</p>}
+                      </div>
+                  );
+              })()
+              }
           </div>
       ) : (
         <div className="pt-6 border-t"><h4 className="text-lg font-semibold mb-2">تسجيل إنجاز التقرير</h4><form onSubmit={handleSubmit(onMarkAsReported)} className="space-y-4"><div><label htmlFor={`notes-${event.id}`} className="text-sm font-medium">ملاحظات (اختياري)</label><Textarea id={`notes-${event.id}`} {...register('notes')}/></div><Button type="submit" disabled={isSubmitting}>{isSubmitting ? <Loader2 className="h-4 w-4 animate-spin ml-2"/> : <CheckCircle className="h-4 w-4 ml-2"/>}توثيق التقرير</Button></form></div>
@@ -136,7 +158,10 @@ export default function ReportsTab() {
     setIsLoading(true);
     setError(null);
     try {
-      const { data, error: fetchError } = await supabase.from('events').select('id, title, start_time, end_time, report_id').order('end_time', { ascending: false });
+      const { data, error: fetchError } = await supabase
+        .from('events')
+        .select('id, title, start_time, end_time, event_reports(*)')
+        .order('end_time', { ascending: false });
       if (fetchError) throw fetchError;
       setEvents(data);
     } catch (e: any) { setError("فشل جلب الفعاليات"); } finally { setIsLoading(false); }
@@ -144,13 +169,13 @@ export default function ReportsTab() {
 
   useEffect(() => { fetchEvents(); }, [fetchEvents]);
   
-  const handleReportSubmitted = (eventId: number, newReportId: string) => {
-    setEvents(prev => prev.map(e => e.id === eventId ? { ...e, report_id: newReportId } : e));
+  const handleReportSubmitted = (eventId: number) => {
+    fetchEvents();
   };
 
   const now = new Date();
-  const awaitingReport = events.filter(e => !e.report_id && new Date(e.end_time) < now);
-  const archivedEvents = events.filter(e => e.report_id);
+  const awaitingReport = events.filter(e => e.event_reports.length === 0 && new Date(e.end_time) < now);
+  const archivedEvents = events.filter(e => e.event_reports.length > 0);
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
