@@ -10,21 +10,17 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 // دالة ذكية لتحديد الرابط الكامل للبروكسي
 const getProxyUrl = () => {
-  // في الإنتاج، استخدم Edge Function
-  if (process.env.NODE_ENV === 'production') {
-    return `${supabaseUrl}/functions/v1/supabase-proxy`;
-  }
-  
-  // في التطوير، استخدم API route للبروكسي
+  // استخدم API route في جميع البيئات (تطوير وإنتاج)
   if (typeof window !== 'undefined') {
+    // في المتصفح، استخدم الرابط الحالي
     return `${window.location.origin}/api/proxy`;
   }
   
-  // في SSR، استخدم رابط محلي
+  // في SSR، استخدم رابط الموقع من متغير البيئة
   return `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/proxy`;
 };
 
-// استخدام Edge Function كبروكسي
+// استخدام API route كبروكسي في جميع البيئات
 const proxyUrl = getProxyUrl();
 
 export const supabase = createClient(proxyUrl, supabaseAnonKey);
