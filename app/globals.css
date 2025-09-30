@@ -104,3 +104,48 @@
 html[dir="rtl"] {
   direction: rtl;
 }
+
+/* تحسينات إضافية للهاتف المحمول */
+@media (max-width: 768px) {
+  /* تحسين التفاعل مع اللمس */
+  button, a, input, select, textarea {
+    touch-action: manipulation;
+  }
+  
+  /* تحسين حجم النص للهاتف المحمول */
+  body {
+    font-size: 16px; /* منع التكبير التلقائي في iOS */
+  }
+  
+  /* تحسين المسافات للهاتف المحمول */
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  /* تحسين الأزرار للهاتف المحمول */
+  .btn-mobile {
+    min-height: 44px; /* الحد الأدنى الموصى به من Apple */
+    min-width: 44px;
+  }
+  
+  /* تحسين النماذج للهاتف المحمول */
+  input, select, textarea {
+    font-size: 16px; /* منع التكبير في iOS */
+    min-height: 44px;
+  }
+}
+
+/* تحسينات للتفاعل مع اللمس */
+.touch-manipulation {
+  touch-action: manipulation;
+}
+
+/* تحسين الأداء للرسوم المتحركة */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -68,16 +68,30 @@ export default function ContactPage() {
 
   return (
     <main className="relative overflow-hidden bg-gray-50 dark:bg-gray-900" dir="rtl">
-      <section className="bg-gradient-to-r from-[#4CAF50] to-[#42A5F5] text-white py-20">
+      <section className="bg-gradient-to-r from-[#4CAF50] to-[#42A5F5] text-white py-12 sm:py-16 lg:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <motion.h1 initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="text-4xl md:text-5xl font-bold mb-4">تواصل معنا</motion.h1>
-          <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="text-xl opacity-90 max-w-2xl mx-auto">نحن هنا للإجابة على استفساراتك واقتراحاتك.</motion.p>
+          <motion.h1 
+            initial={{ opacity: 0, y: -20 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            transition={{ duration: 0.5 }} 
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 leading-tight"
+          >
+            تواصل معنا
+          </motion.h1>
+          <motion.p 
+            initial={{ opacity: 0, y: 20 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            transition={{ duration: 0.5, delay: 0.2 }} 
+            className="text-lg sm:text-xl lg:text-2xl opacity-90 max-w-2xl mx-auto leading-relaxed px-4"
+          >
+            نحن هنا للإجابة على استفساراتك واقتراحاتك.
+          </motion.p>
         </div>
       </section>
 
-      <section className="py-12 sm:py-16">
+      <section className="py-8 sm:py-12 lg:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+          <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
             
             <div className="lg:col-span-1 space-y-8">
               {[{icon: <Mail/>, title: "البريد الإلكتروني", content: <a href="mailto:club@example.com" className="hover:underline">club@example.com</a>},
@@ -112,37 +126,60 @@ export default function ContactPage() {
                     )}
                   </AnimatePresence>
                   
-                  <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 mt-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6 mt-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                       <div>
-                        <Label htmlFor="name" className="mb-2 block">الاسم الكامل *</Label>
-                        <Input id="name" {...register('name')} placeholder="أدخل اسمك الكامل"/>
+                        <Label htmlFor="name" className="mb-2 block text-sm font-medium">الاسم الكامل *</Label>
+                        <Input 
+                          id="name" 
+                          {...register('name')} 
+                          placeholder="أدخل اسمك الكامل"
+                          className="h-11 text-base"
+                        />
                         {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
                       </div>
                       <div>
-                        <Label htmlFor="email" className="mb-2 block">البريد الإلكتروني *</Label>
-                        <Input id="email" type="email" {...register('email')} placeholder="you@example.com" className="force-ltr"/>
+                        <Label htmlFor="email" className="mb-2 block text-sm font-medium">البريد الإلكتروني *</Label>
+                        <Input 
+                          id="email" 
+                          type="email" 
+                          {...register('email')} 
+                          placeholder="you@example.com" 
+                          className="force-ltr h-11 text-base"
+                        />
                         {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
                       </div>
                     </div>
 
                     <div>
-                      <Label htmlFor="phone" className="mb-2 block">رقم الهاتف (اختياري)</Label>
-                      <Input id="phone" type="tel" {...register('phone')} placeholder="05xxxxxxxx" className="force-ltr"/>
+                      <Label htmlFor="phone" className="mb-2 block text-sm font-medium">رقم الهاتف (اختياري)</Label>
+                      <Input 
+                        id="phone" 
+                        type="tel" 
+                        {...register('phone')} 
+                        placeholder="05xxxxxxxx" 
+                        className="force-ltr h-11 text-base"
+                      />
                     </div>
                     
-                    {/* ## التعديل هنا: تم تبديل مكان العنوان والموضوع ## */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                        <div>
-                        <Label htmlFor="title" className="mb-2 block">العنوان *</Label>
-                        <Input id="title" {...register('title')} placeholder="اكتب عنوانًا واضحًا لرسالتك..."/>
+                        <Label htmlFor="title" className="mb-2 block text-sm font-medium">العنوان *</Label>
+                        <Input 
+                          id="title" 
+                          {...register('title')} 
+                          placeholder="اكتب عنوانًا واضحًا لرسالتك..."
+                          className="h-11 text-base"
+                        />
                         {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title.message}</p>}
                       </div>
                       <div>
-                        <Label className="mb-2 block">الموضوع (اختياري)</Label>
+                        <Label className="mb-2 block text-sm font-medium">الموضوع (اختياري)</Label>
                         <Controller name="subject" control={control} render={({ field }) => (
                             <Select onValueChange={field.onChange} value={field.value}>
-                                <SelectTrigger><SelectValue placeholder="اختر موضوع الرسالة" /></SelectTrigger>
+                                <SelectTrigger className="h-11 text-base">
+                                  <SelectValue placeholder="اختر موضوع الرسالة" />
+                                </SelectTrigger>
                                 <SelectContent>
                                     {['اقتراح فعالية', 'تعاون مع نادي آخر', 'استفسار عام', 'مشكلة تقنية', 'أخرى'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                                 </SelectContent>
@@ -153,13 +190,23 @@ export default function ContactPage() {
                     </div>
                     
                     <div>
-                      <Label htmlFor="message" className="mb-2 block">الرسالة *</Label>
-                      <Textarea id="message" {...register('message')} placeholder="اكتب تفاصيل رسالتك هنا..." rows={5}/>
+                      <Label htmlFor="message" className="mb-2 block text-sm font-medium">الرسالة *</Label>
+                      <Textarea 
+                        id="message" 
+                        {...register('message')} 
+                        placeholder="اكتب تفاصيل رسالتك هنا..." 
+                        rows={4}
+                        className="text-base resize-none"
+                      />
                       {errors.message && <p className="text-red-500 text-xs mt-1">{errors.message.message}</p>}
                     </div>
 
-                    <Button type="submit" className="w-full bg-[#4CAF50] hover:bg-[#45a049] text-white py-3 text-lg font-semibold" disabled={isSubmitting}>
-                      {isSubmitting ? <Loader2 className="animate-spin" /> : <Send className="ml-2 h-5 w-5"/>}
+                    <Button 
+                      type="submit" 
+                      className="w-full bg-[#4CAF50] hover:bg-[#45a049] text-white py-3 h-12 text-base font-semibold" 
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? <Loader2 className="animate-spin ml-2 h-5 w-5" /> : <Send className="ml-2 h-5 w-5"/>}
                       {isSubmitting ? 'جارٍ الإرسال...' : 'إرسال الرسالة'}
                     </Button>
                   </form>

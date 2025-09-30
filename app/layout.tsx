@@ -2,7 +2,8 @@
 
 import { Tajawal } from "next/font/google";
 import "./globals.css";
-import Providers from "@/components/Providers"; 
+import Providers from "@/components/Providers";
+import { Toaster } from "react-hot-toast"; 
 
 const tajawal = Tajawal({
   subsets: ["arabic"],
@@ -17,10 +18,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ar" dir="rtl" className={tajawal.variable}>
-      <body className="font-tajawal antialiased">
+      <body className="font-tajawal antialiased" suppressHydrationWarning={true}>
         <Providers>
         {children}
         </Providers>
+        <Toaster position="bottom-center" />
       </body>
     </html>
   );

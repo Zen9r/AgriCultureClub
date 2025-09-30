@@ -24,6 +24,7 @@ interface EditAvatarDialogProps {
 export default function EditAvatarDialog({ profile, isOpen, setIsOpen }: EditAvatarDialogProps) {
   const [link, setLink] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const { uploadFile, isUploading } = useFileUpload();
   const queryClient = useQueryClient();
 
@@ -54,6 +55,13 @@ export default function EditAvatarDialog({ profile, isOpen, setIsOpen }: EditAva
   const handleImageUpload = async (file: File) => {
     if (!file) return;
 
+    // إنشاء معاينة للصورة قبل الرفع
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPreviewUrl(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+
     // --- بداية التعديل المهم ---
     // أنشئ مسارًا فريدًا وآمنًا داخل مجلد خاص بالمستخدم
      
@@ -65,6 +73,8 @@ export default function EditAvatarDialog({ profile, isOpen, setIsOpen }: EditAva
     const publicUrl = await uploadFile(file, 'avatars', filePath); // أرسل المسار الجديد للدالة
     if (publicUrl) {
       await updateProfileAvatar(publicUrl);
+      // تنظيف المعاينة بعد نجاح الرفع
+      setPreviewUrl(null);
     }
   };
 
@@ -78,7 +88,12 @@ export default function EditAvatarDialog({ profile, isOpen, setIsOpen }: EditAva
   const isLoading = isUploading || isSubmitting;
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      setIsOpen(open);
+      if (!open) {
+        setPreviewUrl(null);
+      }
+    }}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>تغيير الصورة الشخصية</DialogTitle>
@@ -86,6 +101,17 @@ export default function EditAvatarDialog({ profile, isOpen, setIsOpen }: EditAva
             ارفع صورة جديدة من جهازك أو أدخل رابطًا مباشرًا لصورة.
           </DialogDescription>
         </DialogHeader>
+        
+        {/* معاينة الصورة */}
+        {previewUrl && (
+          <div className="flex justify-center mb-4">
+            <img 
+              src={previewUrl} 
+              alt="معاينة الصورة" 
+              className="w-32 h-32 rounded-full object-cover border-2 border-gray-200"
+            />
+          </div>
+        )}
         <Tabs defaultValue="upload" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="upload"><Upload className="h-4 w-4 mr-2"/>رفع صورة</TabsTrigger>

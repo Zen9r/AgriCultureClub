@@ -16,26 +16,18 @@ export function EventFilterTabs({
   setFilter 
 }: EventFilterTabsProps) {
   return (
-    <div className="w-full overflow-x-auto pb-2">
-      <style jsx>{`
-        .no-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-        .no-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
-
-      <div className="flex w-max mx-auto space-x-1 rounded-xl bg-gray-100 dark:bg-gray-800 p-1 no-scrollbar">
+    <div className="w-full overflow-x-auto pb-2 hide-horizontal-scrollbar">
+      <div className="flex w-max mx-auto space-x-1 rounded-xl bg-gray-100 dark:bg-gray-800 p-1">
         {categories.map((category) => (
-          <button
+          <motion.button
             key={category}
             onClick={() => setFilter(category)}
+            whileTap={{ scale: 0.95 }}
             className={cn(
-              "relative rounded-lg px-4 py-2 text-sm font-medium transition-colors",
+              "relative rounded-lg px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium transition-all duration-200",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500",
-              "focus-visible:ring-offset-2 whitespace-nowrap",
+              "focus-visible:ring-offset-2 whitespace-nowrap touch-manipulation",
+              "active:scale-95",
               activeFilter === category ? "" : "text-gray-700 hover:text-black dark:text-gray-300 dark:hover:text-white"
             )}
           >
@@ -53,7 +45,7 @@ export function EventFilterTabs({
             )}>
               {category === "كل الفعاليات" ? "الكل" : category}
             </span>
-          </button>
+          </motion.button>
         ))}
       </div>
     </div>

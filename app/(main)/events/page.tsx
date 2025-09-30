@@ -89,12 +89,22 @@ export default function EventsPage() {
 
   return (
     <main className="relative overflow-hidden bg-gray-50 dark:bg-gray-900">
-      <section className="bg-gradient-to-r from-[#4CAF50] to-[#42A5F5] text-white py-16">
+      <section className="bg-gradient-to-r from-[#4CAF50] to-[#42A5F5] text-white py-12 sm:py-16 lg:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="text-4xl md:text-5xl font-bold mb-4">
+            <motion.h1 
+              initial={{ opacity: 0, y: 20 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              transition={{ duration: 0.5 }} 
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 leading-tight"
+            >
                 الفعاليات القادمة
             </motion.h1>
-            <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="text-xl opacity-90 max-w-2xl mx-auto">
+            <motion.p 
+              initial={{ opacity: 0, y: 20 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              transition={{ duration: 0.5, delay: 0.2 }} 
+              className="text-lg sm:text-xl lg:text-2xl opacity-90 max-w-2xl mx-auto leading-relaxed px-4"
+            >
                 اكتشف جميع الفعاليات والأنشطة المتاحة وسجل حضورك الآن
             </motion.p>
         </div>
@@ -104,10 +114,10 @@ export default function EventsPage() {
             <EventFilterTabs categories={categories} activeFilter={filter} setFilter={setFilter} />
         </div>
       </section>
-      <section className="py-16">
+      <section className="py-8 sm:py-12 lg:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8"
             variants={containerVariants}
             initial="hidden"
             animate="visible"
@@ -119,32 +129,74 @@ export default function EventsPage() {
             ) : filteredEvents.length > 0 ? (
               filteredEvents.map(event => (
                 <motion.div key={event.id} variants={itemVariants}>
-                  <Card className="overflow-hidden h-full flex flex-col bg-white dark:bg-gray-800 rounded-lg transition-all duration-300 hover:shadow-2xl hover:-translate-y-2">
+                  <Card className="overflow-hidden h-full flex flex-col bg-white dark:bg-gray-800 rounded-lg transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 border border-gray-100 dark:border-gray-700">
                     <div className="relative">
-                        <img src={event.image_url || `https://placehold.co/600x400/e8f5e9/4caf50?text=${encodeURIComponent(categoryMap[event.category || ''] || 'Event')}`} alt={event.title} className="w-full h-48 object-cover"/>
-                        <div className="absolute top-4 right-4 bg-[#4CAF50] text-white px-3 py-1 rounded-full text-sm font-semibold shadow-md">{event.category || 'فعالية'}</div>
+                        <img 
+                          src={event.image_url || `https://placehold.co/600x400/e8f5e9/4caf50?text=${encodeURIComponent(categoryMap[event.category || ''] || 'Event')}`} 
+                          alt={event.title} 
+                          className="w-full h-40 sm:h-48 object-cover"
+                        />
+                        <div className="absolute top-3 right-3 bg-[#4CAF50] text-white px-2 py-1 rounded-full text-xs sm:text-sm font-semibold shadow-md">
+                          {event.category || 'فعالية'}
+                        </div>
                     </div>
-                    <CardHeader className="flex-grow">
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 line-clamp-1">{event.title}</h3>
-                        <p className="text-gray-600 dark:text-gray-300 text-sm line-clamp-2 h-10">{event.description}</p>
+                    <CardHeader className="flex-grow p-4 sm:p-6">
+                        <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-2 line-clamp-1">
+                          {event.title}
+                        </h3>
+                        <p className="text-gray-600 dark:text-gray-300 text-sm line-clamp-2 h-10">
+                          {event.description}
+                        </p>
                     </CardHeader>
-                    <CardContent>
-                        <div className="space-y-3 text-sm text-gray-500 dark:text-gray-400">
-                        <div className="flex items-center"><Calendar className="w-4 h-4 ml-2 text-green-500" />{new Date(event.start_time).toLocaleDateString('ar-SA', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
-                        <div className="flex items-center"><Clock className="w-4 h-4 ml-2 text-green-500" />{new Date(event.start_time).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}</div>
-                        <div className="flex items-center"><MapPin className="w-4 h-4 ml-2 text-green-500" />{event.location}</div>
-                        <div className="flex items-center"><Users className="w-4 h-4 ml-2 text-green-500" />{event.registered_attendees} / {event.max_attendees || '∞'} مشارك</div>
+                    <CardContent className="p-4 sm:p-6 pt-0">
+                        <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                          <div className="flex items-center">
+                            <Calendar className="w-3 h-3 sm:w-4 sm:h-4 ml-2 text-green-500 flex-shrink-0" />
+                            <span className="truncate">
+                              {new Date(event.start_time).toLocaleDateString('ar-SA', { 
+                                weekday: 'short', 
+                                day: 'numeric', 
+                                month: 'short' 
+                              })}
+                            </span>
+                          </div>
+                          <div className="flex items-center">
+                            <Clock className="w-3 h-3 sm:w-4 sm:h-4 ml-2 text-green-500 flex-shrink-0" />
+                            <span>
+                              {new Date(event.start_time).toLocaleTimeString('ar-SA', { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              })}
+                            </span>
+                          </div>
+                          <div className="flex items-center">
+                            <MapPin className="w-3 h-3 sm:w-4 sm:h-4 ml-2 text-green-500 flex-shrink-0" />
+                            <span className="truncate">{event.location}</span>
+                          </div>
+                          <div className="flex items-center">
+                            <Users className="w-3 h-3 sm:w-4 sm:h-4 ml-2 text-green-500 flex-shrink-0" />
+                            <span>
+                              {event.registered_attendees} / {event.max_attendees || '∞'} مشارك
+                            </span>
+                          </div>
                         </div>
                     </CardContent>
-                    <CardFooter className="flex gap-2 p-4 bg-gray-50 dark:bg-gray-800/50">
-                        <Button className="flex-1 bg-[#4CAF50] hover:bg-[#45a049] text-white" onClick={() => handleAttendEvent(event)} disabled={isRegistering}>
-                        {isRegistering ? 'جارٍ التسجيل...' : 'تسجيل في الفعالية'}
+                    <CardFooter className="flex flex-col sm:flex-row gap-2 p-4 sm:p-6 pt-0 bg-gray-50 dark:bg-gray-800/50">
+                        <Button 
+                          className="w-full sm:flex-1 bg-[#4CAF50] hover:bg-[#45a049] text-white h-10 sm:h-11 text-sm font-medium" 
+                          onClick={() => handleAttendEvent(event)} 
+                          disabled={isRegistering}
+                        >
+                          {isRegistering ? 'جارٍ التسجيل...' : 'تسجيل في الفعالية'}
                         </Button>
-                           <Link href={`/${event.id}`} className="flex-1">
-                            <Button variant="outline" className="w-full border-[#4CAF50] text-[#4CAF50] hover:bg-[#4CAF50] hover:text-white">
-                             التفاصيل
-                            </Button>
-                           </Link>
+                        <Link href={`/${event.id}`} className="w-full sm:flex-1">
+                          <Button 
+                            variant="outline" 
+                            className="w-full border-[#4CAF50] text-[#4CAF50] hover:bg-[#4CAF50] hover:text-white h-10 sm:h-11 text-sm font-medium"
+                          >
+                            التفاصيل
+                          </Button>
+                        </Link>
                     </CardFooter>
                   </Card>
                 </motion.div>

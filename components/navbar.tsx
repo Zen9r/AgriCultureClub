@@ -20,6 +20,7 @@ export default function Navbar() {
     const lastScrollY = useRef(0); // قيمة ابتدائية 0
     const lastScrollDirection = useRef<'up' | 'down'>('up'); // نوع محدد وقيمة ابتدائية 'up'
     const scrollTimeout = useRef<NodeJS.Timeout | null>(null); // نوع محدد وقيمة ابتدائية null
+    const mobileMenuRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
 
   useEffect(() => {
@@ -75,6 +76,28 @@ export default function Navbar() {
       }
     };
   }, [scrolled]);
+
+  // إغلاق القائمة عند النقر خارجها
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      // منع التمرير عند فتح القائمة
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
 
   const navLinks = [
     { href: "/", label: "الرئيسية" },
@@ -139,41 +162,136 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* زر قائمة الجوال */}
+          {/* زر قائمة الجوال المحسن */}
           <div className="absolute inset-y-0 left-0 flex items-center pl-4 md:hidden">
-            <button onClick={() => setIsOpen(!isOpen)} className="inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-black focus:outline-none">
-              <span className="sr-only">Open main menu</span>
-              {isOpen ? <X className="block h-6 w-6" /> : <Menu className="block h-6 w-6" />}
-            </button>
+            <motion.button 
+              onClick={() => setIsOpen(!isOpen)} 
+              className="inline-flex items-center justify-center p-2 rounded-lg text-gray-700 hover:text-[#4CAF50] hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#4CAF50] focus:ring-offset-2 transition-all duration-200"
+              whileTap={{ scale: 0.95 }}
+            >
+              <span className="sr-only">فتح القائمة الرئيسية</span>
+              <motion.div
+                initial={false}
+                animate={{ rotate: isOpen ? 180 : 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                {isOpen ? <X className="block h-6 w-6" /> : <Menu className="block h-6 w-6" />}
+              </motion.div>
+            </motion.button>
           </div>
         </div>
       </div>
 
-      {/* قائمة الجوال المنسدلة */}
+      {/* قائمة الجوال المنسدلة المحسنة */}
       <AnimatePresence>
         {isOpen && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="md:hidden absolute w-full bg-white shadow-lg border-t">
-            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-              {navLinks.map((link) => (
-                <Link key={link.href} href={link.href} className="text-gray-700 hover:bg-gray-100 block px-3 py-2 rounded-md text-base font-medium" onClick={() => setIsOpen(false)}>
-                  {link.label}
-                </Link>
-              ))}
-              <div className="pt-4 pb-3 border-t border-gray-200">
-                <div className="flex flex-col space-y-3 px-3">
+          <motion.div 
+            ref={mobileMenuRef}
+            initial={{ opacity: 0, height: 0, y: -20 }} 
+            animate={{ opacity: 1, height: 'auto', y: 0 }} 
+            exit={{ opacity: 0, height: 0, y: -20 }}
+            transition={{ 
+              duration: 0.3, 
+              ease: [0.4, 0, 0.2, 1],
+              height: { duration: 0.3 },
+              opacity: { duration: 0.2 },
+              y: { duration: 0.3 }
+            }}
+            className="md:hidden absolute w-full bg-white shadow-xl border-t border-gray-100 overflow-hidden"
+          >
+            <div className="px-4 pt-4 pb-6 space-y-2">
+              {/* روابط التنقل */}
+              <motion.div 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.1, duration: 0.2 }}
+                className="space-y-1"
+              >
+                {navLinks.map((link, index) => (
+                  <motion.div
+                    key={link.href}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.1 + (index * 0.05), duration: 0.2 }}
+                  >
+                    <Link 
+                      href={link.href} 
+                      className="text-gray-700 hover:bg-gray-50 hover:text-[#4CAF50] block px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 border border-transparent hover:border-gray-100" 
+                      onClick={() => setIsOpen(false)}
+                    >
+                      {link.label}
+                    </Link>
+                  </motion.div>
+                ))}
+              </motion.div>
+              
+              {/* أزرار الحساب - تظهر بعد انتهاء انزلاق القائمة */}
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.3 }}
+                className="pt-4 border-t border-gray-200"
+              >
+                <div className="flex flex-col space-y-3 px-1">
                   {user ? (
                     <>
-                      <Link href="/profile" onClick={() => setIsOpen(false)}><Button className="w-full justify-center bg-[#4CAF50] hover:bg-[#45a049] text-white"><User className="w-4 h-4 ml-2" />ملفي الشخصي</Button></Link>
-                      <Button variant="outline" className="w-full justify-center" onClick={handleLogout}><LogOut className="w-4 h-4 ml-2" />تسجيل الخروج</Button>
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.4, duration: 0.2 }}
+                      >
+                        <Link href="/profile" onClick={() => setIsOpen(false)}>
+                          <Button className="w-full justify-center bg-[#4CAF50] hover:bg-[#45a049] text-white h-12 text-base font-medium shadow-sm">
+                            <User className="w-5 h-5 ml-2" />
+                            ملفي الشخصي
+                          </Button>
+                        </Link>
+                      </motion.div>
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.5, duration: 0.2 }}
+                      >
+                        <Button 
+                          variant="outline" 
+                          className="w-full justify-center h-12 text-base font-medium border-gray-300 hover:bg-gray-50" 
+                          onClick={handleLogout}
+                        >
+                          <LogOut className="w-5 h-5 ml-2" />
+                          تسجيل الخروج
+                        </Button>
+                      </motion.div>
                     </>
                   ) : (
                     <>
-                      <Link href="/login" onClick={() => setIsOpen(false)}><Button variant="outline" className="w-full justify-center"><User className="w-4 h-4 ml-2" />تسجيل الدخول</Button></Link>
-                      <Link href="/register" onClick={() => setIsOpen(false)}><Button className="w-full justify-center bg-[#4CAF50] hover:bg-[#45a049] text-white"><UserPlus className="w-4 h-4 ml-2" />التسجيل في النادي</Button></Link>
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.4, duration: 0.2 }}
+                      >
+                        <Link href="/login" onClick={() => setIsOpen(false)}>
+                          <Button variant="outline" className="w-full justify-center h-12 text-base font-medium border-gray-300 hover:bg-gray-50">
+                            <User className="w-5 h-5 ml-2" />
+                            تسجيل الدخول
+                          </Button>
+                        </Link>
+                      </motion.div>
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.5, duration: 0.2 }}
+                      >
+                        <Link href="/register" onClick={() => setIsOpen(false)}>
+                          <Button className="w-full justify-center bg-[#4CAF50] hover:bg-[#45a049] text-white h-12 text-base font-medium shadow-sm">
+                            <UserPlus className="w-5 h-5 ml-2" />
+                            التسجيل في النادي
+                          </Button>
+                        </Link>
+                      </motion.div>
                     </>
                   )}
                 </div>
-              </div>
+              </motion.div>
             </div>
           </motion.div>
         )}

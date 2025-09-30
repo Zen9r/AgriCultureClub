@@ -3,7 +3,6 @@
 import { AuthProvider } from "@/context/AuthContext";
 import Footer from "@/components/footer";
 import Navbar from "@/components/navbar";
-import { Toaster } from "react-hot-toast";
 
 export default function MainLayout({
   children,
@@ -16,7 +15,6 @@ export default function MainLayout({
         <Navbar />
         <main className="flex-grow">{children}</main>
         <Footer />
-        <Toaster position="bottom-center" />
       </div>
     </AuthProvider>
   );

@@ -85,12 +85,22 @@ export default function GalleryPage() {
 
   return (
     <main className="bg-gray-50 dark:bg-gray-900">
-      <section className="bg-gradient-to-r from-[#4CAF50] to-[#42A5F5] text-white py-16">
+      <section className="bg-gradient-to-r from-[#4CAF50] to-[#42A5F5] text-white py-12 sm:py-16 lg:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="text-4xl md:text-5xl font-bold mb-4">
+            <motion.h1 
+              initial={{ opacity: 0, y: 20 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              transition={{ duration: 0.5 }} 
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 leading-tight"
+            >
                 معرض الصور
             </motion.h1>
-            <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="text-xl opacity-90 max-w-2xl mx-auto">
+            <motion.p 
+              initial={{ opacity: 0, y: 20 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              transition={{ duration: 0.5, delay: 0.2 }} 
+              className="text-lg sm:text-xl lg:text-2xl opacity-90 max-w-2xl mx-auto leading-relaxed px-4"
+            >
                 استعرض لحظات مميزة من فعالياتنا وأنشطتنا المتنوعة
             </motion.p>
         </div>
@@ -115,10 +125,10 @@ export default function GalleryPage() {
             </div>
         </div>
       </section>
-      <section className="py-16">
+      <section className="py-8 sm:py-12 lg:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <motion.div
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 lg:gap-6"
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"
@@ -136,14 +146,23 @@ export default function GalleryPage() {
                         <motion.div
                             key={image.id}
                             variants={itemVariants}
-                            className="group cursor-pointer overflow-hidden rounded-lg shadow-md bg-white dark:bg-gray-800"
+                            className="group cursor-pointer overflow-hidden rounded-lg shadow-md bg-white dark:bg-gray-800 aspect-square"
                             onClick={() => setSelectedImage(image)}
-                            whileHover={{ scale: 1.03, y: -5 }}
+                            whileHover={{ scale: 1.02, y: -2 }}
+                            whileTap={{ scale: 0.98 }}
                             transition={{ type: "spring", stiffness: 300, damping: 15 }}
                         >
-                            <img src={image.image_url} alt={image.alt_text} className="w-full h-64 object-cover" />
-                            <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                                <h3 className="text-white font-semibold text-sm line-clamp-2">{image.alt_text}</h3>
+                            <img 
+                              src={image.image_url} 
+                              alt={image.alt_text} 
+                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <div className="absolute bottom-0 left-0 right-0 p-3">
+                                    <h3 className="text-white font-semibold text-xs sm:text-sm line-clamp-2 leading-tight">
+                                      {image.alt_text}
+                                    </h3>
+                                </div>
                             </div>
                         </motion.div>
                     ))
