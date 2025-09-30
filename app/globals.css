@@ -90,9 +90,10 @@
 }
 
 .hide-horizontal-scrollbar {
-  overflow-x: hidden;
+  overflow-x: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 .hide-horizontal-scrollbar::-webkit-scrollbar {
@@ -110,29 +111,117 @@ html[dir="rtl"] {
   /* تحسين التفاعل مع اللمس */
   button, a, input, select, textarea {
     touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
   
   /* تحسين حجم النص للهاتف المحمول */
   body {
     font-size: 16px; /* منع التكبير التلقائي في iOS */
+    line-height: 1.6;
+    -webkit-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
   }
   
   /* تحسين المسافات للهاتف المحمول */
   .container {
     padding-left: 1rem;
     padding-right: 1rem;
+    max-width: 100%;
   }
   
   /* تحسين الأزرار للهاتف المحمول */
   .btn-mobile {
     min-height: 44px; /* الحد الأدنى الموصى به من Apple */
     min-width: 44px;
+    padding: 12px 16px;
+    font-size: 16px;
+    border-radius: 8px;
   }
   
   /* تحسين النماذج للهاتف المحمول */
   input, select, textarea {
     font-size: 16px; /* منع التكبير في iOS */
     min-height: 44px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: 2px solid #e5e7eb;
+    transition: border-color 0.2s ease;
+  }
+  
+  input:focus, select:focus, textarea:focus {
+    border-color: #4CAF50;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+  }
+  
+  /* تحسين البطاقات للهاتف المحمول */
+  .card, [role="article"] {
+    margin: 8px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* تحسين النصوص للهاتف المحمول */
+  h1 { font-size: 2rem; line-height: 1.2; }
+  h2 { font-size: 1.75rem; line-height: 1.3; }
+  h3 { font-size: 1.5rem; line-height: 1.4; }
+  h4 { font-size: 1.25rem; line-height: 1.4; }
+  h5 { font-size: 1.125rem; line-height: 1.5; }
+  h6 { font-size: 1rem; line-height: 1.5; }
+  
+  /* تحسين الصور للهاتف المحمول */
+  img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+  }
+  
+  /* تحسين التبويبات للهاتف المحمول */
+  .tab-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  
+  .tab-container::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* تحسين النوافذ المنبثقة للهاتف المحمول */
+  .modal, .dialog {
+    margin: 1rem;
+    max-width: calc(100vw - 2rem);
+    max-height: calc(100vh - 2rem);
+    border-radius: 12px;
+  }
+  
+  /* تحسين النماذج للهاتف المحمول */
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+  
+  .form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #374151;
+  }
+  
+  /* تحسين الأخطاء للهاتف المحمول */
+  .error-message {
+    color: #dc2626;
+    font-size: 14px;
+    margin-top: 0.25rem;
+    display: block;
+  }
+  
+  /* تحسين الرسائل للهاتف المحمول */
+  .toast, .notification {
+    margin: 1rem;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 14px;
   }
 }
 
@@ -141,11 +230,74 @@ html[dir="rtl"] {
   touch-action: manipulation;
 }
 
+/* تحسينات للأداء على الهواتف المحمولة */
+@media (max-width: 768px) {
+  /* تحسين الأداء */
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* تحسين التمرير */
+  .smooth-scroll {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+  
+  /* تحسين الصور */
+  img {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
+
 /* تحسين الأداء للرسوم المتحركة */
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* تحسينات بسيطة للتفاعل */
+@media (max-width: 768px) {
+  /* تحسين الأزرار */
+  button, [role="button"] {
+    transition: all 0.2s ease;
+  }
+  
+  button:active, [role="button"]:active {
+    transform: scale(0.98);
+  }
+  
+  /* تحسين البطاقات */
+  .card {
+    transition: all 0.3s ease;
+  }
+  
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  }
+  
+  /* تحسين الروابط */
+  a {
+    color: #4CAF50;
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+  
+  a:hover {
+    color: #45a049;
+  }
+  
+  /* تحسين التبويبات */
+  .tab-container button {
+    transition: all 0.2s ease;
+  }
+  
+  .tab-container button:active {
+    transform: scale(0.95);
   }
 }
