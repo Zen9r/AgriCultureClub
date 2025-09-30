@@ -1,140 +1,62 @@
-import { NextRequest, NextResponse } from 'next/server'
+// File: app/api/proxy/[[...path]]/route.ts
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+// This line is crucial for performance. It deploys the proxy to the Edge Network.
+export const runtime = 'edge';
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error("Supabase URL and/or anonymous key are missing in .env.local file. Check variable names.")
-}
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { path: string[] } }
-) {
-  return handleRequest(request, params.path, 'GET')
-}
+async function handler(req: NextRequest) {
+  // Retrieve Supabase URL and Key from environment variables
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { path: string[] } }
-) {
-  return handleRequest(request, params.path, 'POST')
-}
+  // Safety check to ensure variables are defined
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('Supabase environment variables are not set.');
+    return new NextResponse('Internal server configuration error.', { status: 500 });
+  }
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { path: string[] } }
-) {
-  return handleRequest(request, params.path, 'PUT')
-}
+  // Reconstruct the target Supabase URL by taking the path from the incoming request
+  // e.g., /api/proxy/rest/v1/events -> /rest/v1/events
+  const path = req.nextUrl.pathname.replace('/api/proxy', '');
+  const url = new URL(path + req.nextUrl.search, supabaseUrl);
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { path: string[] } }
-) {
-  return handleRequest(request, params.path, 'PATCH')
-}
+  // Copy original headers from the client request
+  const headers = new Headers(req.headers);
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { path: string[] } }
-) {
-  return handleRequest(request, params.path, 'DELETE')
-}
+  // Set mandatory Supabase headers
+  headers.set('apikey', supabaseAnonKey);
+  // The 'Authorization' header is passed through automatically from the client
 
-export async function HEAD(
-  request: NextRequest,
-  { params }: { params: { path: string[] } }
-) {
-  return handleRequest(request, params.path, 'HEAD')
-}
+  // Define the options for the fetch request to Supabase
+  const options: RequestInit = {
+    method: req.method,
+    headers,
+  };
 
-export async function OPTIONS(
-  request: NextRequest,
-  { params }: { params: { path: string[] } }
-) {
-  return handleRequest(request, params.path, 'OPTIONS')
-}
+  // IMPORTANT: Only add a 'body' to the request if the method is not GET or HEAD.
+  // This is the fix for both the Edge runtime error and the login (POST) issue.
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    options.body = req.body;
+    // The 'duplex' property is required by the Edge runtime to stream request bodies
+    // @ts-ignore
+    options.duplex = 'half';
+  }
 
-async function handleRequest(
-  request: NextRequest,
-  pathSegments: string[],
-  method: string
-) {
   try {
-    // Construct the target URL by appending the path to the Supabase URL
-    const path = pathSegments.join('/')
-    const targetUrl = `${supabaseUrl}/${path}`
-    
-    // Get the query string from the original request
-    const searchParams = request.nextUrl.searchParams.toString()
-    const fullTargetUrl = searchParams ? `${targetUrl}?${searchParams}` : targetUrl
-
-    // Prepare headers from the original request
-    const headers = new Headers()
-    
-    // Copy relevant headers from the original request
-    request.headers.forEach((value, key) => {
-      // Skip host header to avoid conflicts
-      if (key.toLowerCase() !== 'host') {
-        headers.set(key, value)
-      }
-    })
-
-    // Add the Supabase API key
-    headers.set('apikey', supabaseAnonKey!)
-    
-    // Ensure proper content type for JSON requests
-    if (method !== 'GET' && method !== 'HEAD' && !headers.has('content-type')) {
-      headers.set('content-type', 'application/json')
-    }
-
-    // Prepare the request body
-    let body: string | undefined
-    if (method !== 'GET' && method !== 'HEAD') {
-      try {
-        body = await request.text()
-      } catch (error) {
-        console.error('Error reading request body:', error)
-        return NextResponse.json({ error: 'Failed to read request body' }, { status: 400 })
-      }
-    }
-
-    // Make the request to Supabase
-    const response = await fetch(fullTargetUrl, {
-      method,
-      headers,
-      body: body || undefined,
-    })
-
-    // Create response headers
-    const responseHeaders = new Headers()
-    
-    // Copy response headers from Supabase
-    response.headers.forEach((value, key) => {
-      // Skip headers that might cause issues
-      if (!['content-encoding', 'transfer-encoding'].includes(key.toLowerCase())) {
-        responseHeaders.set(key, value)
-      }
-    })
-
-    // Add CORS headers to allow the frontend to access the response
-    responseHeaders.set('Access-Control-Allow-Origin', '*')
-    responseHeaders.set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS')
-    responseHeaders.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, apikey, x-client-info, x-client-version')
-
-    // Stream the response back to the client
-    return new NextResponse(response.body, {
-      status: response.status,
-      statusText: response.statusText,
-      headers: responseHeaders,
-    })
-
+    // Forward the request to Supabase and stream the response back
+    const response = await fetch(url.toString(), options);
+    return response;
   } catch (error) {
-    console.error('Proxy error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    )
+    console.error('Edge Proxy error:', error);
+    return new NextResponse('Error forwarding request to Supabase.', { status: 502 }); // 502 Bad Gateway
   }
 }
+
+// Export the same handler for all HTTP methods
+export const GET = handler;
+export const POST = handler;
+export const PUT = handler;
+export const PATCH = handler;
+export const DELETE = handler;
+export const OPTIONS = handler;
