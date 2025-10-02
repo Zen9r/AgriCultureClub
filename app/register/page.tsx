@@ -248,7 +248,7 @@ export default function RegisterPage() {
                               <SelectItem value="الهندسة الزراعية">الهندسة الزراعية</SelectItem>
                               <SelectItem value="وقاية النبات">وقاية النبات</SelectItem>
                               <SelectItem value="الاقتصاد الزراعي">الاقتصاد الزراعي</SelectItem>
-                              <SelectItem value="علوم التغذية">علوم التغذية</SelectItem>
+                              <SelectItem value="علوم الأغذية التغذية">علوم الأغذية والتغذية</SelectItem>
                               <SelectItem value="اخرى">اخرى</SelectItem>
                             </SelectContent>
                           </Select>
