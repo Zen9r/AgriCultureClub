@@ -73,10 +73,11 @@ async function handleRequest(
     // Prepare headers from the original request
     const headers = new Headers()
     
-    // Copy relevant headers from the original request
+    // Copy relevant headers from the original request, including Content-Type and Content-Length
     request.headers.forEach((value, key) => {
-      // Skip host header to avoid conflicts
-      if (key.toLowerCase() !== 'host') {
+      // Skip host header to avoid conflicts, but keep Content-Type and Content-Length
+      const lowerKey = key.toLowerCase()
+      if (lowerKey !== 'host') {
         headers.set(key, value)
       }
     })
@@ -84,28 +85,28 @@ async function handleRequest(
     // Add the Supabase API key
     headers.set('apikey', supabaseAnonKey!)
     
-    // Ensure proper content type for JSON requests
+    // Only add default JSON content type if there's no Content-Type header already
+    // (This preserves multipart/form-data for file uploads)
     if (method !== 'GET' && method !== 'HEAD' && !headers.has('content-type')) {
       headers.set('content-type', 'application/json')
     }
 
-    // Prepare the request body
-    let body: string | undefined
-    if (method !== 'GET' && method !== 'HEAD') {
-      try {
-        body = await request.text()
-      } catch (error) {
-        console.error('Error reading request body:', error)
-        return NextResponse.json({ error: 'Failed to read request body' }, { status: 400 })
-      }
+    // Prepare fetch options
+    const fetchOptions: RequestInit = {
+      method,
+      headers,
+    }
+
+    // For non-GET/HEAD requests, pass the body as a stream
+    // This is critical for file uploads (multipart/form-data)
+    if (method !== 'GET' && method !== 'HEAD' && request.body) {
+      fetchOptions.body = request.body
+      // @ts-ignore - duplex is required for streaming bodies but not in TypeScript types yet
+      fetchOptions.duplex = 'half'
     }
 
     // Make the request to Supabase
-    const response = await fetch(fullTargetUrl, {
-      method,
-      headers,
-      body: body || undefined,
-    })
+    const response = await fetch(fullTargetUrl, fetchOptions)
 
     // Create response headers
     const responseHeaders = new Headers()

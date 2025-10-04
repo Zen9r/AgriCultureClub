@@ -42,6 +42,100 @@
   font-family: var(--font-tajawal), sans-serif;
 }
 
+/* ======================================= */
+/* ==  Enhanced Typography System     == */
+/* ======================================= */
+
+@layer base {
+  /* Improved font rendering */
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Refined Typography Scale */
+  h1, .heading-1 {
+    @apply text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-tight;
+    font-weight: 800;
+  }
+
+  h2, .heading-2 {
+    @apply text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight leading-tight;
+    font-weight: 700;
+  }
+
+  h3, .heading-3 {
+    @apply text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight leading-snug;
+    font-weight: 700;
+  }
+
+  h4, .heading-4 {
+    @apply text-xl sm:text-2xl lg:text-3xl font-semibold leading-snug;
+    font-weight: 600;
+  }
+
+  h5, .heading-5 {
+    @apply text-lg sm:text-xl lg:text-2xl font-semibold leading-snug;
+    font-weight: 600;
+  }
+
+  h6, .heading-6 {
+    @apply text-base sm:text-lg lg:text-xl font-semibold leading-normal;
+    font-weight: 600;
+  }
+
+  /* Body text variants */
+  .body-lg {
+    @apply text-lg leading-relaxed;
+    font-weight: 400;
+  }
+
+  .body-base {
+    @apply text-base leading-relaxed;
+    font-weight: 400;
+  }
+
+  .body-sm {
+    @apply text-sm leading-relaxed;
+    font-weight: 400;
+  }
+
+  /* Caption and label styles */
+  .caption {
+    @apply text-xs leading-normal;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+
+  .label-lg {
+    @apply text-base font-semibold;
+    font-weight: 600;
+  }
+
+  .label-base {
+    @apply text-sm font-semibold;
+    font-weight: 600;
+  }
+
+  .label-sm {
+    @apply text-xs font-semibold;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  /* Display text for hero sections */
+  .display-xl {
+    @apply text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-none;
+    font-weight: 900;
+  }
+
+  .display-lg {
+    @apply text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-none;
+    font-weight: 900;
+  }
+}
+
 /* RTL specific styles */
 [dir="rtl"] .rtl\:space-x-reverse > :not([hidden]) ~ :not([hidden]) {
   --tw-space-x-reverse: 1;

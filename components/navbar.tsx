@@ -127,10 +127,25 @@ export default function Navbar() {
           {/* الجزء الأيمن */}
           <div className="absolute inset-y-0 right-0 flex items-center pr-4 sm:pr-6 lg:pr-8">
             <div className="flex-shrink-0 flex items-center space-x-4 rtl:space-x-reverse">
-              <Link href="/"><Image src="/university-logo.png" alt="شعار الجامعة" width={150} height={150} className="object-contain" /></Link>
+              <Link href="/">
+                <Image 
+                  src="/university-logo.png" 
+                  alt="شعار الجامعة" 
+                  width={800} 
+                  height={250} 
+                  className="h-16 w-auto object-contain" 
+                  priority
+                />
+              </Link>
               <div className="h-12 w-px bg-gray-200"></div>
               <Link href="/" className="flex items-center space-x-3 rtl:space-x-reverse">
-                <Image src="/club-logo.png" alt="شعار النادي" width={50} height={50} className="object-contain" />
+                <Image 
+                  src="/club-logo.png" 
+                  alt="شعار النادي" 
+                  width={200} 
+                  height={200} 
+                  className="h-12 w-12 object-contain"
+                />
                 <span className="hidden lg:block text-xl font-bold text-gray-800">النادي الثقافي الاجتماعي</span>
               </Link>
             </div>

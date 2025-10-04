@@ -24,6 +24,8 @@ import DesignRequestsReviewTab from "@/components/admin/DesignRequestsReviewTab"
 import DesignRequestTab from "@/components/admin/DesignRequestTab";
 import RecordHoursTab from "@/components/admin/RecordHoursTab";
 import ReportsTab from "@/components/admin/ReportsTab";
+import SubmitReportLinkTab from "@/components/admin/SubmitReportLinkTab";
+import PreEventReportsTab from "@/components/admin/PreEventReportsTab";
 import GalleryUploadTab from "@/components/admin/GalleryUploadTab";
 import ContactMessagesTab from "@/components/admin/ContactMessagesTab";
 
@@ -122,6 +124,8 @@ export default function ProfilePage() {
                     eventHours={eventHours} 
                     extraHours={extraHours} 
                     isLoading={isLoading}
+                    userGoal={profile?.voluntary_hours_goal || 50}
+                    userId={user?.id}
                  />, 
       permissionGroup: 'general' 
     },
@@ -129,7 +133,9 @@ export default function ProfilePage() {
     { id: 'create_event', label: '➕ إنشاء فعالية', component: <CreateEventTab />, permissionGroup: 'leadership' },
     { id: 'design_requests_submit', label: '✉️ طلب تصميم', component: <DesignRequestTab />, permissionGroup: 'leadership' },
     { id: 'record_hours', label: '⏱️ تسجيل الساعات', component: <RecordHoursTab />, permissionGroup: 'hr' },
-    { id: 'reports', label: '📊 رفع التقارير', component: <ReportsTab />, permissionGroup: 'hr_lead_only' },
+    { id: 'pre_event_reports', label: '📋 تقارير ما قبل الفعاليات', component: <PreEventReportsTab />, permissionGroup: 'hr' },
+    { id: 'submit_report_link', label: '🔗 رفع روابط التقارير', component: <SubmitReportLinkTab />, permissionGroup: 'hr' },
+    { id: 'reports', label: '📊 إدارة التقارير', component: <ReportsTab />, permissionGroup: 'hr_lead_only' },
     { id: 'view_design_requests', label: '🎨 مراجعة طلبات التصميم', component: <DesignRequestsReviewTab />, permissionGroup: 'design' },
     { id: 'upload_photos', label: '📷 رفع صور للمعرض', component: <GalleryUploadTab />, permissionGroup: 'media' },
     { id: 'view_contact_messages', label: '📨 رسائل التواصل', component: <ContactMessagesTab />, permissionGroup: 'pr' },

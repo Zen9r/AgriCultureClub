@@ -4,16 +4,19 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import toast from 'react-hot-toast';
 import { useForm } from 'react-hook-form';
+import { motion } from 'framer-motion';
 
 // --- UI Components ---
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Inbox, Check, X, Archive, ListChecks, User, Phone, Image as ImageIcon, Briefcase, Users, Hash, Clock, FileText, MessageSquare } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Loader2, Inbox, Check, X, Archive, ListChecks, User, Phone, Image as ImageIcon, Briefcase, Users, Hash, Clock, FileText, MessageSquare, Plus, Search } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 
 // --- Types ---
@@ -38,7 +41,20 @@ export default function RecordHoursTab() {
   const [allRequests, setAllRequests] = useState<CombinedRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { register, handleSubmit, reset } = useForm<ReviewFormData>();
+  const [showCustomHourInput, setShowCustomHourInput] = useState<{ [key: string]: boolean }>({});
+  const [customHours, setCustomHours] = useState<{ [key: string]: string }>({});
+  const [selectedHourOption, setSelectedHourOption] = useState<{ [key: string]: string }>({});
+  const { register, handleSubmit, reset, setValue } = useForm<ReviewFormData>();
+  
+  // Manual Hours Dialog State
+  const [isManualDialogOpen, setIsManualDialogOpen] = useState(false);
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<ProfileRecord[]>([]);
+  const [selectedUser, setSelectedUser] = useState<ProfileRecord | null>(null);
+  const [manualHours, setManualHours] = useState('');
+  const [manualDescription, setManualDescription] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [isSubmittingManual, setIsSubmittingManual] = useState(false);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -96,28 +112,148 @@ export default function RecordHoursTab() {
   const pendingRequests = allRequests.filter(r => r.status === 'pending');
   const archivedRequests = allRequests.filter(r => r.status === 'approved' || r.status === 'rejected');
 
+  const handleHourSelection = (requestId: string, value: string) => {
+    setSelectedHourOption(prev => ({ ...prev, [requestId]: value }));
+    
+    if (value === 'more') {
+      setShowCustomHourInput(prev => ({ ...prev, [requestId]: true }));
+      setValue('awarded_hours', '');
+    } else {
+      setShowCustomHourInput(prev => ({ ...prev, [requestId]: false }));
+      setValue('awarded_hours', value);
+    }
+  };
+
+  const handleCustomHoursChange = (requestId: string, value: string) => {
+    setCustomHours(prev => ({ ...prev, [requestId]: value }));
+    setValue('awarded_hours', value);
+  };
+
   const handleReview = async (requestId: string, status: 'approved' | 'rejected', data: ReviewFormData) => {
     setIsSubmitting(true);
-    if (status === 'approved' && (!data.awarded_hours || data.awarded_hours === '')) {
+    
+    // Get the awarded hours from either the select or custom input
+    let finalAwardedHours = data.awarded_hours;
+    if (showCustomHourInput[requestId]) {
+      finalAwardedHours = customHours[requestId] || '';
+    }
+    
+    if (status === 'approved' && (!finalAwardedHours || finalAwardedHours === '')) {
       toast.error("عند الموافقة، يجب تحديد عدد الساعات.");
       setIsSubmitting(false);
       return;
     }
+
+    // Validate custom hours if using custom input
+    if (showCustomHourInput[requestId]) {
+      const hours = parseInt(finalAwardedHours, 10);
+      if (isNaN(hours) || hours < 11 || hours > 99) {
+        toast.error("يرجى إدخال عدد ساعات بين 11 و 99");
+        setIsSubmitting(false);
+        return;
+      }
+    }
+    
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { toast.error("User not found"); setIsSubmitting(false); return; }
 
     const updateData = {
       status,
       notes: data.notes || null,
-      awarded_hours: status === 'approved' ? parseInt(data.awarded_hours, 10) : null,
+      awarded_hours: status === 'approved' ? parseInt(finalAwardedHours, 10) : null,
       reviewed_by: user.id,
     };
     
     const { error } = await supabase.from('extra_hours_requests').update(updateData).eq('id', requestId);
     
     if (error) { toast.error("فشل تحديث الطلب."); console.error("Update Error:", error); }
-    else { toast.success("تم تحديث حالة الطلب بنجاح."); reset(); fetchData(); }
+    else { 
+      toast.success("تم تحديث حالة الطلب بنجاح."); 
+      reset(); 
+      // Clear state for this request
+      setShowCustomHourInput(prev => ({ ...prev, [requestId]: false }));
+      setCustomHours(prev => ({ ...prev, [requestId]: '' }));
+      setSelectedHourOption(prev => ({ ...prev, [requestId]: '' }));
+      fetchData(); 
+    }
     setIsSubmitting(false);
+  };
+
+  // Manual Hours Functions
+  const handleUserSearch = async () => {
+    if (!userSearchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    
+    setIsSearching(true);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, student_id, role, committee, phone_number')
+        .or(`full_name.ilike.%${userSearchQuery}%,student_id.ilike.%${userSearchQuery}%`)
+        .limit(10);
+
+      if (error) throw error;
+      setSearchResults(data || []);
+    } catch (e: any) {
+      toast.error('فشل البحث عن المستخدم');
+      console.error(e);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleManualHoursSubmit = async () => {
+    if (!selectedUser) {
+      toast.error('الرجاء اختيار مستخدم');
+      return;
+    }
+    if (!manualHours || parseInt(manualHours) <= 0) {
+      toast.error('الرجاء إدخال عدد ساعات صحيح');
+      return;
+    }
+    if (!manualDescription.trim()) {
+      toast.error('الرجاء إدخال وصف للساعات المضافة');
+      return;
+    }
+
+    setIsSubmittingManual(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const { error } = await supabase.from('extra_hours_requests').insert({
+        user_id: selectedUser.id,
+        activity_title: 'ساعات مضافة يدوياً',
+        task_description: manualDescription,
+        task_type: 'أخرى',
+        status: 'approved',
+        awarded_hours: parseInt(manualHours),
+        reviewed_by: user.id,
+        notes: 'تمت الإضافة يدوياً من قبل إدارة الموارد البشرية'
+      });
+
+      if (error) throw error;
+
+      toast.success(`تمت إضافة ${manualHours} ساعة بنجاح إلى ${selectedUser.full_name}`);
+      
+      // Reset form
+      setIsManualDialogOpen(false);
+      setSelectedUser(null);
+      setUserSearchQuery('');
+      setSearchResults([]);
+      setManualHours('');
+      setManualDescription('');
+      
+      // Refresh data
+      fetchData();
+    } catch (e: any) {
+      toast.error(e.message || 'فشل إضافة الساعات');
+      console.error(e);
+    } finally {
+      setIsSubmittingManual(false);
+    }
   };
     
   const renderRequesterDetails = (req: CombinedRequest) => (
@@ -159,6 +295,142 @@ export default function RecordHoursTab() {
   
   return (
     <div dir="rtl" className="p-4 sm:p-6 bg-slate-50 dark:bg-slate-900/50 min-h-screen">
+      {/* Manual Hours Dialog */}
+      <Dialog open={isManualDialogOpen} onOpenChange={setIsManualDialogOpen}>
+        <div className="max-w-4xl mx-auto mb-4">
+          <DialogTrigger asChild>
+            <Button className="gap-2 w-full sm:w-auto">
+              <Plus className="h-4 w-4"/>
+              إضافة ساعات يدوياً لمستخدم
+            </Button>
+          </DialogTrigger>
+        </div>
+        
+        <DialogContent className="sm:max-w-[600px]" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>إضافة ساعات يدوياً</DialogTitle>
+            <DialogDescription>
+              قم بإضافة ساعات مباشرة لأي مستخدم في النظام
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* User Search */}
+            <div className="space-y-2">
+              <Label>البحث عن المستخدم</Label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="ابحث بالاسم أو الرقم الجامعي..."
+                  value={userSearchQuery}
+                  onChange={(e) => setUserSearchQuery(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleUserSearch()}
+                />
+                <Button onClick={handleUserSearch} disabled={isSearching} variant="outline">
+                  {isSearching ? <Loader2 className="h-4 w-4 animate-spin"/> : <Search className="h-4 w-4"/>}
+                </Button>
+              </div>
+            </div>
+
+            {/* Search Results */}
+            {searchResults.length > 0 && (
+              <div className="border rounded-lg p-2 max-h-48 overflow-y-auto space-y-1">
+                {searchResults.map((user) => (
+                  <button
+                    key={user.id}
+                    onClick={() => {
+                      setSelectedUser(user);
+                      setSearchResults([]);
+                      setUserSearchQuery('');
+                    }}
+                    className={`w-full text-right p-3 rounded border hover:bg-accent transition-colors ${
+                      selectedUser?.id === user.id ? 'bg-primary/10 border-primary' : ''
+                    }`}
+                  >
+                    <p className="font-medium">{user.full_name}</p>
+                    <p className="text-sm text-muted-foreground">{user.student_id}</p>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Selected User Display */}
+            {selectedUser && (
+              <div className="border rounded-lg p-4 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-semibold">{selectedUser.full_name}</p>
+                    <p className="text-sm text-muted-foreground">{selectedUser.student_id}</p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedUser(null)}
+                  >
+                    <X className="h-4 w-4"/>
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Hours Input */}
+            <div className="space-y-2">
+              <Label>عدد الساعات*</Label>
+              <Input
+                type="number"
+                min="1"
+                max="99"
+                placeholder="مثال: 5"
+                value={manualHours}
+                onChange={(e) => setManualHours(e.target.value)}
+              />
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2">
+              <Label>سبب إضافة الساعات*</Label>
+              <Textarea
+                placeholder="مثال: المساعدة في تنظيم الفعالية الخاصة..."
+                rows={3}
+                value={manualDescription}
+                onChange={(e) => setManualDescription(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsManualDialogOpen(false);
+                setSelectedUser(null);
+                setUserSearchQuery('');
+                setSearchResults([]);
+                setManualHours('');
+                setManualDescription('');
+              }}
+            >
+              إلغاء
+            </Button>
+            <Button
+              onClick={handleManualHoursSubmit}
+              disabled={isSubmittingManual || !selectedUser || !manualHours || !manualDescription}
+            >
+              {isSubmittingManual ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin ml-2"/>
+                  جاري الإضافة...
+                </>
+              ) : (
+                <>
+                  <Check className="h-4 w-4 ml-2"/>
+                  إضافة الساعات
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Tabs defaultValue="pending" className="max-w-4xl mx-auto">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="pending"><ListChecks className="ml-2 h-4 w-4"/> طلبات معلقة ({pendingRequests.length})</TabsTrigger>
@@ -184,12 +456,53 @@ export default function RecordHoursTab() {
                                 <CardHeader className="pb-3"><CardTitle className="text-lg">الإجراء</CardTitle></CardHeader>
                                 <CardContent>
                                     <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
-                                        <div className="space-y-2"><Label>الساعات المعتمدة (عند الموافقة)</Label>
-                                            <Select onValueChange={(value) => register('awarded_hours').onChange({ target: { name: 'awarded_hours', value } })}>
+                                        <div className="space-y-2">
+                                            <Label>الساعات المعتمدة (عند الموافقة)</Label>
+                                            <Select 
+                                              value={selectedHourOption[req.id] || ''}
+                                              onValueChange={(value) => handleHourSelection(req.id, value)}
+                                            >
                                                 <SelectTrigger><SelectValue placeholder="اختر عدد الساعات" /></SelectTrigger>
-                                                <SelectContent>{Array.from({ length: 10 }, (_, i) => i + 1).map(h => <SelectItem key={h} value={String(h)}>{h} ساعات</SelectItem>)}</SelectContent>
+                                                <SelectContent>
+                                                  {Array.from({ length: 10 }, (_, i) => i + 1).map(h => (
+                                                    <SelectItem key={h} value={String(h)}>
+                                                      {h} {h === 1 ? 'ساعة' : h === 2 ? 'ساعتان' : 'ساعات'}
+                                                    </SelectItem>
+                                                  ))}
+                                                  <SelectItem value="more" className="font-semibold text-primary">
+                                                    أكثر...
+                                                  </SelectItem>
+                                                </SelectContent>
                                             </Select>
                                         </div>
+                                        
+                                        {showCustomHourInput[req.id] && (
+                                          <motion.div
+                                            initial={{ opacity: 0, height: 0 }}
+                                            animate={{ opacity: 1, height: 'auto' }}
+                                            exit={{ opacity: 0, height: 0 }}
+                                            transition={{ duration: 0.2 }}
+                                            className="space-y-2"
+                                          >
+                                            <Label htmlFor={`custom-hours-${req.id}`}>أدخل عدد الساعات (11-99)*</Label>
+                                            <Input
+                                              id={`custom-hours-${req.id}`}
+                                              type="number"
+                                              min="11"
+                                              max="99"
+                                              placeholder="مثال: 15"
+                                              value={customHours[req.id] || ''}
+                                              onChange={(e) => handleCustomHoursChange(req.id, e.target.value)}
+                                              className="h-11"
+                                            />
+                                            {customHours[req.id] && (
+                                              <p className="text-sm text-blue-600 dark:text-blue-400">
+                                                سيتم اعتماد {customHours[req.id]} {parseInt(customHours[req.id]) === 1 ? 'ساعة' : parseInt(customHours[req.id]) === 2 ? 'ساعتان' : 'ساعات'}
+                                              </p>
+                                            )}
+                                          </motion.div>
+                                        )}
+
                                         <div className="space-y-2"><Label>ملاحظات</Label><Textarea placeholder="اكتب ملاحظاتك هنا..." {...register('notes')} /></div>
                                         <div className="flex gap-2 pt-2">
                                             <Button size="sm" variant="success" onClick={handleSubmit(data => handleReview(req.id, 'approved', data))} disabled={isSubmitting}>{isSubmitting ? <Loader2 className="h-4 w-4 animate-spin"/> : <Check className="ml-2 h-4 w-4" />} موافقة</Button>

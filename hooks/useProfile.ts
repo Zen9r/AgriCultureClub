@@ -14,6 +14,7 @@ export interface Profile {
   role: 'member' | 'committee_member' | 'committee_lead' | 'committee_deputy' | 'club_deputy' | 'club_lead' | 'club_supervisor' | 'super_admin';
   committee: 'hr' | 'pr' | 'media' | 'design' | 'logistics' | null;
   avatar_url: string | null;
+  voluntary_hours_goal?: number; // User's personal volunteer hours goal
 }
 
 const fetchProfile = async (userId: string): Promise<Profile | null> => {
