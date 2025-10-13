@@ -48,8 +48,8 @@ type DatabaseEvent = {
 
 const eventFormSchema = z.object({
   title: z.string().min(3, "العنوان إجباري."),
-  description: z.string().min(10, "الوصف المختصر إجباري."),
-  details: z.string().min(20, "التفاصيل الكاملة إجبارية."),
+  description: z.string().min(1, "الوصف المختصر إجباري."),
+  details: z.string().min(1, "التفاصيل الكاملة إجبارية."),
   location: z.string().min(3, "الموقع إجباري."),
   startDate: z.date({ required_error: "تاريخ البدء إجباري." }),
   startHour: z.string({ required_error: "الساعة إجبارية." }),
@@ -82,13 +82,14 @@ const hoursOptions = Array.from({ length: 24 }, (_, i) => i.toString().padStart(
 const minutesOptions = ['00', '15', '30', '45'];
 
 // --- Multi-Step Wizard Component ---
-function EventWizardForm({ mode, initialData, onSubmit, onCancel }: {
+function EventWizardForm({ mode, initialData, onSubmit, onCancel, currentStep, setCurrentStep }: {
   mode: 'create' | 'edit';
   initialData?: Partial<DatabaseEvent>;
   onSubmit: (data: any) => Promise<void>;
   onCancel: () => void;
+  currentStep: number;
+  setCurrentStep: React.Dispatch<React.SetStateAction<number>>;
 }) {
-    const [currentStep, setCurrentStep] = useState(1);
     const [isUploading, setIsUploading] = useState(false);
     const totalSteps = 3;
     
@@ -216,7 +217,7 @@ function EventWizardForm({ mode, initialData, onSubmit, onCancel }: {
                             <FormField name="category" control={form.control} render={({ field }) => (
                                 <FormItem>
                                     <FormLabel className="text-base">فئة الفعالية *</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <Select onValueChange={field.onChange} value={field.value}>
                                         <FormControl>
                                             <SelectTrigger className="h-12">
                                                 <SelectValue placeholder="اختر فئة" />
@@ -313,7 +314,7 @@ function EventWizardForm({ mode, initialData, onSubmit, onCancel }: {
                                         )}/>
                                         <FormField name="startHour" control={form.control} render={({ field }) => (
                                             <FormItem>
-                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                <Select onValueChange={field.onChange} value={field.value}>
                                                     <FormControl>
                                                         <SelectTrigger className="h-11">
                                                             <SelectValue placeholder="الساعة" />
@@ -328,7 +329,7 @@ function EventWizardForm({ mode, initialData, onSubmit, onCancel }: {
                                         )}/>
                                         <FormField name="startMinute" control={form.control} render={({ field }) => (
                                             <FormItem>
-                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                <Select onValueChange={field.onChange} value={field.value}>
                                                     <FormControl>
                                                         <SelectTrigger className="h-11">
                                                             <SelectValue placeholder="الدقيقة" />
@@ -370,7 +371,7 @@ function EventWizardForm({ mode, initialData, onSubmit, onCancel }: {
                                         )}/>
                                         <FormField name="endHour" control={form.control} render={({ field }) => (
                                             <FormItem>
-                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                <Select onValueChange={field.onChange} value={field.value}>
                                                     <FormControl>
                                                         <SelectTrigger className="h-11">
                                                             <SelectValue placeholder="الساعة" />
@@ -385,7 +386,7 @@ function EventWizardForm({ mode, initialData, onSubmit, onCancel }: {
                                         )}/>
                                         <FormField name="endMinute" control={form.control} render={({ field }) => (
                                             <FormItem>
-                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                <Select onValueChange={field.onChange} value={field.value}>
                                                     <FormControl>
                                                         <SelectTrigger className="h-11">
                                                             <SelectValue placeholder="الدقيقة" />
@@ -503,7 +504,8 @@ function EventWizardForm({ mode, initialData, onSubmit, onCancel }: {
                         </Button>
                     ) : (
                         <Button 
-                            type="submit" 
+                            type="button"
+                            onClick={form.handleSubmit(processSubmit)}
                             className="flex-1 gap-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600" 
                             disabled={form.formState.isSubmitting}
                         >
@@ -541,6 +543,7 @@ export default function EventManagementTab() {
   const [selectedEvent, setSelectedEvent] = useState<DatabaseEvent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [currentStep, setCurrentStep] = useState(1);
 
   const fetchEvents = useCallback(async () => {
     setIsLoading(true);
@@ -601,13 +604,20 @@ export default function EventManagementTab() {
   const handleEditClick = (event: DatabaseEvent) => {
     setSelectedEvent(event);
     setMode('edit');
+    setCurrentStep(1);
     setActiveTab('form');
   };
   
   const handleCancelEdit = () => {
     setMode('create');
     setSelectedEvent(null);
+    setCurrentStep(1);
     setActiveTab('manage');
+  };
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    setCurrentStep(1);
   };
 
   const copyToClipboard = (text: string) => {
@@ -634,7 +644,7 @@ export default function EventManagementTab() {
         animate={{ opacity: 1 }}
         dir="rtl"
     >
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="grid w-full grid-cols-2 h-14">
           <TabsTrigger value="manage" className="gap-2">
             <CalendarClockIcon className="h-4 w-4"/>
@@ -775,6 +785,8 @@ export default function EventManagementTab() {
                       initialData={selectedEvent || undefined}
                       onSubmit={mode === 'create' ? handleCreate : handleUpdate}
                       onCancel={handleCancelEdit}
+                      currentStep={currentStep}
+                      setCurrentStep={setCurrentStep}
                   />
               </CardContent>
           </Card>
